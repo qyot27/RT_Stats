@@ -15,7 +15,7 @@
 */
 
 #include "RT_Stats.h"
-
+#include <iostream>
 
 AVSValue __cdecl RT_Debug(AVSValue args, void* user_data, IScriptEnvironment* env) {
 	enum{BFSZ=1024};
@@ -47,7 +47,7 @@ AVSValue __cdecl RT_Debug(AVSValue args, void* user_data, IScriptEnvironment* en
 					c=*(++s);												// skip 2nd of match pair EOL
 				bf[o++]	='\n';
 				bf[o]	='\0';
-				OutputDebugString(bf);										// send to DebugView with n/l
+				std::cerr << bf;												// send to DebugView with n/l
 				++lines;
 				o=off;														// Back to beginning (after "RT_Debug:")
 				if(c && o > 0 && bf[o-1] != ' ')
@@ -65,7 +65,7 @@ AVSValue __cdecl RT_Debug(AVSValue args, void* user_data, IScriptEnvironment* en
 	if(o > off || lines==0) {												// allow single blank line separators
 		bf[o++]	='\n';
 		bf[o]	='\0';
-		OutputDebugString(bf);												// Flush remaining text.
+		std::cerr << bf;												// Flush remaining text.
 	}
     return 0;
 }
@@ -230,7 +230,7 @@ AVSValue __cdecl RT_DebugF(AVSValue args, void* user_data, IScriptEnvironment* e
 							char remc2 = run[1];
 							run[0]='\n';
 							run[1]='\0';
-							OutputDebugString(pbuf);					// send to DebugView with name and n/l
+							std::cerr << pbuf;					// send to DebugView with name and n/l
 							run[0]=remc1;								// restore
 							run[1]=remc2;
 							if((run[0]=='\r' && run[1]=='\n') || (run[0]=='\n' && run[1]=='\r'))
@@ -243,7 +243,7 @@ AVSValue __cdecl RT_DebugF(AVSValue args, void* user_data, IScriptEnvironment* e
 								} else {
 									*p++='\n';
 									*p='\0';
-									OutputDebugString(pbuf);  			// send to DebugView with n/l
+									std::cerr << pbuf;  			// send to DebugView with n/l
 									if((run[0]=='\r' && run[1]=='\n') || (run[0]=='\n' && run[1]=='\r'))
 										++run;							// skip matched \r\n pairs
 									++run;
@@ -273,7 +273,7 @@ AVSValue __cdecl RT_DebugF(AVSValue args, void* user_data, IScriptEnvironment* e
 
 				*p++='\n';
 				*p='\0';
-				OutputDebugString(pbuf);					// send to DebugView with n/l
+				std::cerr << pbuf;					// send to DebugView with n/l
 				p=pbuf + offset;	;
 				break;
 			case 't' :
@@ -294,7 +294,7 @@ AVSValue __cdecl RT_DebugF(AVSValue args, void* user_data, IScriptEnvironment* e
 			case '\r' :
 				*p++='\n';
 				*p='\0';
-				OutputDebugString(pbuf);					// send to DebugView with n/l
+				std::cerr << pbuf;					// send to DebugView with n/l
 				p=pbuf + offset;	;
 				break;
 			case '\t' :
@@ -324,7 +324,7 @@ AVSValue __cdecl RT_DebugF(AVSValue args, void* user_data, IScriptEnvironment* e
 	if(p > pbuf+offset || lines==0) {										// allow single blank line separators
 		*p++	='\n';
 		*p		='\0';
-		OutputDebugString(pbuf);											// Flush remaining text.
+		std::cerr << pbuf;											// Flush remaining text.
 	}
 
 	delete [] pbuf;

@@ -21,7 +21,7 @@
 #ifndef __RT_STATS_H__
 
 
-	#include "compiler.h"
+	// #include <linux/compiler.h>
 
 	#define VERSION_NUMBER	2.0				// 2 Digits of precision
 	#define VERSION_BETA	13				// writes 2 digits
@@ -29,24 +29,24 @@
 
 	//
 
-	#include <windows.h>
+	// #include <windows.h>
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <math.h>
 	#include <float.h>
-	#include <tlhelp32.h>
-	#include <direct.h>
-	#include <io.h>							// _chsize_s
+	// #include <tlhelp32.h>
+	// #include <direct.h>
+	#include <sys/io.h>							// _chsize_s
 	#include <errno.h>
 	#include <time.h>
-	#include <commdlg.h>					// FSEL, OS Specific WINVER (Mainly)
-	#include <Shlobj.h>						// FSEL, IE Specific _WIN32_IE
-	#include <process.h>					// _getpid
+	// #include <commdlg.h>					// FSEL, OS Specific WINVER (Mainly)
+	// #include <Shlobj.h>						// FSEL, IE Specific _WIN32_IE
+	// #include <process.h>					// _getpid
 
 	#ifdef AVISYNTH_PLUGIN_25
 		#include "avisynth25.h"
 	#else
-		#include "avisynth.h"
+		#include <avisynth/avisynth.h>
 	#endif
 
 	enum {	RTMIN,
@@ -164,7 +164,7 @@
 		float	f;
 	};
 
-	typedef union id_un id;
+	typedef union id_un id2;
 
 	// Array
 
@@ -190,7 +190,7 @@
 		unsigned int name;
 		unsigned int ver;
 		unsigned int idtype[4];
-		id		id[128];
+		id2		id[128];
 		int		offset;
 		int		attriboffset;
 		int     stroffset;
@@ -216,7 +216,7 @@
 		unsigned int name;
 		unsigned int ver;
 		unsigned int idtype[4];
-		id		id[128];
+		id2		id[128];
 		int		offset;
 		int		infoffset;
 		int		attriboffset;

@@ -22,7 +22,7 @@
 	extern int __cdecl dprintf(char* fmt, ...);
 	extern void __cdecl SplitFn(const char *fn,char*path,char *name,char *ext);
 	extern void __cdecl Ucase(char *s);
-	extern char * __cdecl GetErrorString(DWORD dwLastError=GetLastError());
+	// extern char * __cdecl GetErrorString(unsigned int dwLastError=GetLastError());
 	extern const char * __cdecl StrStrC(const char *s,const char *sub,const bool sig,int slen = -1,int  sublen = -1);
 	extern int __cdecl		RT_MYstats_Lo(int flgs,const AVSValue &std,const AVSValue &xtra,MYLO &ylo,const char*Name,IScriptEnvironment* env,unsigned int*histp=NULL);
 	extern int __cdecl		RT_MRGBChanstats_Lo(int flgs,const AVSValue &std,const AVSValue &xtra,MRGBALO &rgb,const char*Name,IScriptEnvironment* env);
@@ -198,8 +198,8 @@
 // ADDED IN 2
 	extern int __cdecl      RandInt_Lo(int randmax);
 	extern int __cdecl      QueryFatVolume(const char *relname);
-	extern __int64 __cdecl  QueryDiskFreeSpace(const char *relname);
-	extern __int64 __cdecl  QueryMaxFileSize(const char *relname);
+	extern int64_t __cdecl  QueryDiskFreeSpace(const char *relname);
+	extern int64_t __cdecl  QueryMaxFileSize(const char *relname);
 	extern double __cdecl PVF_LumaCorrelation_Planar(const PVideoFrame &src,const PVideoFrame &src2,const int xx,const int yy,const int ww,const int hh,const int xx2,const int yy2,bool altscan);
 	extern double __cdecl PVF_AverageLuma_Planar(const PVideoFrame &src,const int xx,const int yy,const int ww,const int hh,const bool altscan);
 	extern int __cdecl    PVF_CountLuma_Planar(const PVideoFrame &src,const int xx,const int yy,const int ww,const int hh,const bool altscan,unsigned int *cnt);

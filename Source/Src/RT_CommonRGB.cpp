@@ -141,7 +141,7 @@ int __cdecl RT_MRGBChanstats_Lo(int flgs,const AVSValue &std,const AVSValue &xtr
 
 	srcp += ((vi.height-1 - yy) * pitch) + rgbxx;			// Upside down RGB, height-1 is top line, -yy is top line of yy coord
 
-	__int64 accA[4];
+	int64_t accA[4];
     unsigned int sumA[4];
 	unsigned int cntA[4][256];
     int x, y,i;
@@ -149,12 +149,12 @@ int __cdecl RT_MRGBChanstats_Lo(int flgs,const AVSValue &std,const AVSValue &xtr
 	int ww2=ww * xstep;
 	int x2;
 	if(chmin==chmax) { // Single Channel
-		__int64 acc=0;
+		int64_t acc=0;
 		unsigned int sum=0;
 		unsigned int *cnt=&cntA[chmin][0];
 		srcp += (chmin==3) ? 3 : 2 - chmin;										// RGB to BGR offset
 		if(flgs != RTAVE_F) {
-			ZeroMemory(cnt,sizeof(cntA[0]));
+			memset(cnt,NULL,sizeof(cntA[0]));
 		}
 		if (mask !=NULL) { // MASK
 			PVideoFrame msrc        = mask->GetFrame(n,env);
@@ -269,7 +269,7 @@ int __cdecl RT_MRGBChanstats_Lo(int flgs,const AVSValue &std,const AVSValue &xtr
 		sumA[chmin]=sum;
 	} else {	// multi-channel
 		if(flgs != RTAVE_F) {
-			ZeroMemory(cntA,sizeof(cntA));
+			memset(cntA,NULL,sizeof(cntA));
 		} else {
 			for(i=4;--i>=0;) {
 				sumA[i]=0;
@@ -553,7 +553,7 @@ int __cdecl RT_MRGBChanstats_Lo(int flgs,const AVSValue &std,const AVSValue &xtr
 
 	} // END 	// multi-channel
 
-	ZeroMemory(&rgb,sizeof(rgb));
+	memset(&rgb,NULL,sizeof(rgb));
 
 	rgb.chmin=chmin;
 	rgb.chmax=chmax;
@@ -563,7 +563,7 @@ int __cdecl RT_MRGBChanstats_Lo(int flgs,const AVSValue &std,const AVSValue &xtr
 		return 0;		// Got Nothing, No valid pixels
 
 	for(chan=chmin;chan<=chmax;++chan) {
-		__int64 acc;
+		int64_t acc;
 		unsigned long sum;
 		if(flgs==RTAVE_F) {
 			acc=accA[chan];

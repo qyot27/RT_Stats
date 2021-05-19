@@ -19,6 +19,7 @@
 */
 
 #include "RT_Stats.h"
+#include <algorithm>
 
 double __cdecl PVF_LumaDifference_RGB(const PVideoFrame &src,const PVideoFrame &src2,
 		const int xx,const int yy,const int ww,const int hh,const int xx2,const int yy2,const bool altscan,
@@ -34,7 +35,7 @@ double __cdecl PVF_LumaDifference_RGB(const PVideoFrame &src,const PVideoFrame &
 	const int xstep	   = (IsRGB32) ? 4 : 3;
     const BYTE  *srcp  = src->GetReadPtr(PLANAR_Y)  + (height - 1 - yy) * pitch	 + (xx * xstep);
     const BYTE  *srcp2 = src2->GetReadPtr(PLANAR_Y) + (height2- 1 - yy2)* pitch2 + (xx2* xstep);
-	__int64 acc		 = 0;
+	int64_t acc		 = 0;
     unsigned int sum = 0;
 	const int yhit = (altscan) ? (hh +1)>>1 : hh;
     const unsigned int Pixels = (ww * yhit);
@@ -112,7 +113,7 @@ double __cdecl PVF_PixelDifference_RGB(const PVideoFrame &src,const PVideoFrame 
 	const int xstep	   = (IsRGB32) ? 4 : 3;
     const BYTE  *srcp  = src->GetReadPtr()  + (height - 1 - yy) * pitch	 + (xx * xstep);
     const BYTE  *srcp2 = src2->GetReadPtr() + (height2- 1 - yy2)* pitch2 + (xx2* xstep);
-	__int64 acc		 = 0;
+	int64_t acc		 = 0;
     unsigned int sum = 0;
 	const int yhit = (altscan) ? (hh +1)>>1 : hh;
     const unsigned int Pixels = (ww * yhit);
@@ -168,7 +169,7 @@ unsigned int __cdecl PVF_LumaPixelsDifferentCount_RGB(const PVideoFrame &src,con
     unsigned int sum = 0;
 	const int yhit = (altscan) ? (hh +1)>>1 : hh;
     const unsigned int Pixels = (ww * yhit);
-	const int th=min(max(thresh,0),255);
+	const int th=std::min(std::max(thresh,0),255);
 	// Matrix: Default=0=REC601 : 1=REC709 : 2 = PC601 : 3 = PC709
 	const int mat = matrix & 0x03;
 	double				Kr,Kb;
@@ -271,7 +272,7 @@ double __cdecl PVF_LumaCorrelation_RGB(const PVideoFrame &src,const PVideoFrame 
 	}
 
 	unsigned int Sxy_lo = 0;
-	__int64 Sxy=0;
+	int64_t Sxy=0;
 	if(ww==1) {
 		for(int y=yhit ; --y>=0;) {
 			const unsigned int dx=(srcp [0]	* Yb + srcp [1]	* Yg + srcp [2]	* Yr + OffyPlusHalf) >> shift;
@@ -314,13 +315,13 @@ double __cdecl PVF_LumaCorrelation_RGB(const PVideoFrame &src,const PVideoFrame 
 	}
 
 	Sxy += Sxy_lo;
-	__int64 Sx				= 0;
-	__int64 Sy				= 0;
-	__int64 Sx2				= 0;
-	__int64 Sy2				= 0;
+	int64_t Sx				= 0;
+	int64_t Sy				= 0;
+	int64_t Sx2				= 0;
+	int64_t Sy2				= 0;
 
 	for (i=256;--i>=0;) {
-		__int64 z;
+		int64_t z;
 		z	= 	i	* cntx[i];		Sx += 	z;		Sx2+=	i	* z;
 		z	= 	i	* cnty[i];		Sy += 	z;		Sy2+=	i	* z;
 	}
@@ -340,7 +341,7 @@ double __cdecl PVF_LumaCorrelation_RGB(const PVideoFrame &src,const PVideoFrame 
 	  div = sqrt(div1) * sqrt(div2);
 	}
 	double ret=num / div;
-	ret = max(min(ret,1.0),-1.0);
+	ret = std::max(std::min(ret,1.0),-1.0);
 	return ret;
 // http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient#Mathematical_properties
 }

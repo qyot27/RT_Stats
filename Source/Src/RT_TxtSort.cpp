@@ -15,12 +15,12 @@
 */
 
 #include "RT_Stats.h"
-
+#include <limits.h>
 
 int strcmpfn(char *s1,char *s2) {
 	// string compare on filename node but comparing digits by value, then strlen of digits.
-	char n1[MAX_PATH];
-	char n2[MAX_PATH];
+	char n1[PATH_MAX];
+	char n2[PATH_MAX];
 	char *p1,*p2;
 	for(p1=n1;*p1++=*s1++;);
 	Ucase(n1);
@@ -77,12 +77,12 @@ int strcmpfn(char *s1,char *s2) {
 
 
 int Srt_FNinc2(const char *s1,const char *s2) {
-	char Path1[MAX_PATH];										// Path up to and incl last slash
-	char Path2[MAX_PATH];										// Path up to and incl last slash
-	char Name1[MAX_PATH];										// Name up to and incl last '.'
-	char Name2[MAX_PATH];										// Name up to and incl last '.'
-	char Ext1[MAX_PATH];										// User supplied extension with pipe separated wildcards
-	char Ext2[MAX_PATH];										// User supplied extension with pipe separated wildcards
+	char Path1[PATH_MAX];										// Path up to and incl last slash
+	char Path2[PATH_MAX];										// Path up to and incl last slash
+	char Name1[PATH_MAX];										// Name up to and incl last '.'
+	char Name2[PATH_MAX];										// Name up to and incl last '.'
+	char Ext1[PATH_MAX];										// User supplied extension with pipe separated wildcards
+	char Ext2[PATH_MAX];										// User supplied extension with pipe separated wildcards
 	SplitFn(s1,Path1,Name1,Ext1);
 	SplitFn(s2,Path2,Name2,Ext2);
 	int ret;
@@ -93,12 +93,12 @@ int Srt_FNinc2(const char *s1,const char *s2) {
 }
 
 int Srt_FNinc(const char *s1,const char *s2) {
-	char Path1[MAX_PATH];										// Path up to and incl last slash
-	char Path2[MAX_PATH];										// Path up to and incl last slash
-	char Name1[MAX_PATH];										// Name up to and incl last '.'
-	char Name2[MAX_PATH];										// Name up to and incl last '.'
-	char Ext1[MAX_PATH];										// User supplied extension with pipe separated wildcards
-	char Ext2[MAX_PATH];										// User supplied extension with pipe separated wildcards
+	char Path1[PATH_MAX];										// Path up to and incl last slash
+	char Path2[PATH_MAX];										// Path up to and incl last slash
+	char Name1[PATH_MAX];										// Name up to and incl last '.'
+	char Name2[PATH_MAX];										// Name up to and incl last '.'
+	char Ext1[PATH_MAX];										// User supplied extension with pipe separated wildcards
+	char Ext2[PATH_MAX];										// User supplied extension with pipe separated wildcards
 	SplitFn(s1,Path1,Name1,Ext1);
 	SplitFn(s2,Path2,Name2,Ext2);
 	int ret;
@@ -108,12 +108,12 @@ int Srt_FNinc(const char *s1,const char *s2) {
 }
 
 int Srt_FNdec2(const char *s1,const char *s2) {
-	char Path1[MAX_PATH];										// Path up to and incl last slash
-	char Path2[MAX_PATH];										// Path up to and incl last slash
-	char Name1[MAX_PATH];										// Name up to and incl last '.'
-	char Name2[MAX_PATH];										// Name up to and incl last '.'
-	char Ext1[MAX_PATH];										// User supplied extension with pipe separated wildcards
-	char Ext2[MAX_PATH];										// User supplied extension with pipe separated wildcards
+	char Path1[PATH_MAX];										// Path up to and incl last slash
+	char Path2[PATH_MAX];										// Path up to and incl last slash
+	char Name1[PATH_MAX];										// Name up to and incl last '.'
+	char Name2[PATH_MAX];										// Name up to and incl last '.'
+	char Ext1[PATH_MAX];										// User supplied extension with pipe separated wildcards
+	char Ext2[PATH_MAX];										// User supplied extension with pipe separated wildcards
 	SplitFn(s2,Path1,Name1,Ext1);
 	SplitFn(s1,Path2,Name2,Ext2);
 	int ret;
@@ -124,12 +124,12 @@ int Srt_FNdec2(const char *s1,const char *s2) {
 }
 
 int Srt_FNdec(const char *s1,const char *s2) {
-	char Path1[MAX_PATH];										// Path up to and incl last slash
-	char Path2[MAX_PATH];										// Path up to and incl last slash
-	char Name1[MAX_PATH];										// Name up to and incl last '.'
-	char Name2[MAX_PATH];										// Name up to and incl last '.'
-	char Ext1[MAX_PATH];										// User supplied extension with pipe separated wildcards
-	char Ext2[MAX_PATH];										// User supplied extension with pipe separated wildcards
+	char Path1[PATH_MAX];										// Path up to and incl last slash
+	char Path2[PATH_MAX];										// Path up to and incl last slash
+	char Name1[PATH_MAX];										// Name up to and incl last '.'
+	char Name2[PATH_MAX];										// Name up to and incl last '.'
+	char Ext1[PATH_MAX];										// User supplied extension with pipe separated wildcards
+	char Ext2[PATH_MAX];										// User supplied extension with pipe separated wildcards
 	SplitFn(s2,Path1,Name1,Ext1);
 	SplitFn(s1,Path2,Name2,Ext2);
 	int ret;

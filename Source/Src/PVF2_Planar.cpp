@@ -15,6 +15,7 @@
 */
 
 #include "RT_Stats.h"
+#include "algorithm"
 
 double __cdecl PVF_LumaDifference_Planar(const PVideoFrame &src,const PVideoFrame &src2,
 		const int xx,const int yy,const int ww,const int hh,const int xx2,const int yy2,bool altscan) {
@@ -25,7 +26,7 @@ double __cdecl PVF_LumaDifference_Planar(const PVideoFrame &src,const PVideoFram
 	const int ystride2 = pitch2*ystep;
     const BYTE  *srcp  = src->GetReadPtr(PLANAR_Y)  + (yy * pitch)	 + xx;
     const BYTE  *srcp2 = src2->GetReadPtr(PLANAR_Y) + (yy2 * pitch2) + xx2;
-	__int64 acc		 = 0;
+	int64_t acc		 = 0;
     unsigned int sum = 0;
 	const int yhit = (altscan) ? (hh +1)>>1 : hh;
     const unsigned int Pixels = (ww * yhit);
@@ -79,7 +80,7 @@ double __cdecl PVF_PixelDifference_Planar(const PVideoFrame &src,const PVideoFra
 	const int yhit   = (altscan) ? (hh +1)>>1 : hh;
     unsigned int PixelsC = (ww * yhit);
 	int xSubS=1,ySubS=1;
-	__int64 acc = 0;
+	int64_t acc = 0;
     unsigned int sum=0;
 
 	const BYTE  *srcp	= src->GetReadPtr(PLANAR_U);
@@ -277,7 +278,7 @@ unsigned int __cdecl PVF_LumaPixelsDifferentCount_Planar(const PVideoFrame &src,
     unsigned int sum = 0;
 	const int yhit = (altscan) ? (hh +1)>>1 : hh;
     const unsigned int Pixels = (ww * yhit);
-	const int th=min(max(thresh,0),255);
+	const int th=std::min(std::max(thresh,0),255);
 	if(ww == 1) {														// Special case for single pixel width
 		for(int y=yhit ; --y>=0;) {
 			if(abs(srcp[0] - srcp2[0]) > th)	++sum;
@@ -339,7 +340,7 @@ double __cdecl PVF_LumaCorrelation_Planar(const PVideoFrame &src,const PVideoFra
 	}
 
 	unsigned int Sxy_lo = 0;
-	__int64 Sxy=0;
+	int64_t Sxy=0;
 	if(ww==1) {
 		for(int y=yhit ; --y>=0;) {
 			const unsigned int dx=srcp[0];
@@ -412,13 +413,13 @@ double __cdecl PVF_LumaCorrelation_Planar(const PVideoFrame &src,const PVideoFra
 	}
 
 	Sxy += Sxy_lo;
-	__int64 Sx				= 0;
-	__int64 Sy				= 0;
-	__int64 Sx2				= 0;
-	__int64 Sy2				= 0;
+	int64_t Sx				= 0;
+	int64_t Sy				= 0;
+	int64_t Sx2				= 0;
+	int64_t Sy2				= 0;
 
 	for (i=256;--i>=0;) {
-		__int64 z;
+		int64_t z;
 		z	= 	i	* cntx[i];		Sx += 	z;		Sx2+=	i	* z;
 		z	= 	i	* cnty[i];		Sy += 	z;		Sy2+=	i	* z;
 	}
@@ -438,7 +439,7 @@ double __cdecl PVF_LumaCorrelation_Planar(const PVideoFrame &src,const PVideoFra
 	  div = sqrt(div1) * sqrt(div2);
 	}
 	double ret=num / div;
-	ret = max(min(ret,1.0),-1.0);
+	ret = std::max(std::min(ret,1.0),-1.0);
 	return ret;
 // http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient#Mathematical_properties
 }

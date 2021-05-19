@@ -15,7 +15,8 @@
 */
 
 #include "RT_Stats.h"
-
+#include <limits.h>
+#include <wx/wx.h>
 
 /*
 	typedef struct tagOFN {
@@ -81,19 +82,27 @@ AVSValue __cdecl  RT_FSelOpen(AVSValue args, void* user_data, IScriptEnvironment
 		}
 	}
 	filt2[ix++]='\0';	filt2[ix]='\0';			// Double nul term
-	int size = (multi) ? 65536 : (MAX_PATH * 2);
+	int size = (multi) ? 65536 : (PATH_MAX * 2);
 	int len=int(strlen(fn)) + 1;
 	if(len>size)	size=len;
 	char *szFile = new char [size];					// buffer for file name
 	if(szFile==NULL)						env->ThrowError("%sCannot allocate memory",myName);
 	strcpy(szFile,fn);								// set initial filename
+
+	wxFileDialog * openFileDialog = new wxFileDialog();
+
+	if (openFileDialog->ShowModal() == wxID_OK) {
+	wxString szFile = openFileDialog->GetPath();
+	}
+
+	/*
 	int flgs= \
 		OFN_PATHMUSTEXIST |
 		OFN_FILEMUSTEXIST |
 		OFN_HIDEREADONLY  |		// hide readonly check box
 		OFN_LONGNAMES     |
 		OFN_NOCHANGEDIR;		// restore original current directory if user changed. Does NOT work for GetOpenFileName.
-
+		tc->LoadFile(fileName);
 	if(multi) flgs |=(OFN_ALLOWMULTISELECT|OFN_EXPLORER) ;
 
 	OPENFILENAME ofn;								// common dialog box structure
@@ -141,12 +150,15 @@ AVSValue __cdecl  RT_FSelOpen(AVSValue args, void* user_data, IScriptEnvironment
 		}
 		return (int)ret;
 	}
-	int off=ofn.nFileOffset;
+	*/
+
+	int off=0; // ofn.nFileOffset;
 	if(!multi || (off>0 && szFile[off-1]=='\\')) {		// single filename selected
 		AVSValue retstr = env->SaveString(szFile);
 		delete [] szFile;
 		return retstr;
 	}
+
 	p=szFile;
 	int nstr=0;
 	while(*p) {			// Count gotten strings, 1st is dir, then filenames. Ends in double nul.
@@ -215,12 +227,20 @@ AVSValue __cdecl  RT_FSelSaveAs(AVSValue args, void* user_data, IScriptEnvironme
 		}
 	}
 	filt2[ix++]='\0';	filt2[ix]='\0';				// Double nul term
-	int size = MAX_PATH * 2;
+	int size = PATH_MAX * 2;
 	int len=int(strlen(fn)) + 1;
 	if(len>size)	size=len;
 	char *szFile = new char [size];					// buffer for file name
 	if(szFile==NULL)						env->ThrowError("%sCannot allocate memory",myName);
 	strcpy(szFile,fn);								// set initial filename
+
+	wxFileDialog * saveFileDialog = new wxFileDialog();
+
+	if (saveFileDialog->ShowModal() == wxID_OK) {
+	wxString szFile = saveFileDialog->GetPath();
+	}
+
+	/*
 	int flgs= \
 		OFN_OVERWRITEPROMPT |
 		OFN_LONGNAMES       |
@@ -283,7 +303,7 @@ AVSValue __cdecl  RT_FSelSaveAs(AVSValue args, void* user_data, IScriptEnvironme
 typedef struct _browseinfo {
   HWND              hwndOwner;			// A handle to the owner window for the dialog box.
   PCIDLIST_ABSOLUTE pidlRoot;			// Root folder to browse from PIDL (NULL = DeskTop)
-  LPTSTR            pszDisplayName;		// returned name, Presumed MAX_PATH characters
+  LPTSTR            pszDisplayName;		// returned name, Presumed PATH_MAX characters
   LPCTSTR           lpszTitle;			// Title Bar String
   UINT              ulFlags;
   BFFCALLBACK       lpfn;				// Calback functionm, Can be NULL.
@@ -292,12 +312,12 @@ typedef struct _browseinfo {
 } BROWSEINFO, *PBROWSEINFO, *LPBROWSEINFO;
 */
 
-
+/*
 int CALLBACK FSelFolderCallback(HWND hwnd,UINT uMsg,LPARAM lp, LPARAM pData) {
 	// The callback function required to init desired path to folder, rather than root (Desktop)
 	// meaning of lp depends on uMsg type
 	// pData is application defined data for the callback function.
-	char szPath[MAX_PATH*2];
+	char szPath[PATH_MAX*2];
 	switch(uMsg) {
 	case BFFM_INITIALIZED:											// Selects the specified folder Path
 		szPath[0]='\0';
@@ -321,6 +341,7 @@ int CALLBACK FSelFolderCallback(HWND hwnd,UINT uMsg,LPARAM lp, LPARAM pData) {
 		break;
 	}
 	return 0;	// Always returns 0
+*/
 }
 
 AVSValue __cdecl  RT_FSelFolder(AVSValue args, void* user_data, IScriptEnvironment* env) {
@@ -329,12 +350,22 @@ AVSValue __cdecl  RT_FSelFolder(AVSValue args, void* user_data, IScriptEnvironme
 	const char * dir	=args[1].AsString(".");			// Default to '.' = current directory
 	const bool debug	=args[2].AsBool(false);
 
+	wxDirDialog* dirDialog = new wxDirDialog();
+
+	char szFold[PATH_MAX * 2];
+
+	if (dirDialog->ShowModal() == wxID_OK) {
+	wxString wxFold = dirDialog->GetPath();
+		szFold == wxFold.ToStdString();
+	}
+
+	/*
 	LPMALLOC pMalloc;										// Shell allocator
     if (!SUCCEEDED(SHGetMalloc(&pMalloc))) {				// Did we successfully get the shell mem alloc interaface
 		env->ThrowError("%sCannot get Shell Alloc Interface",myName);
 	}
 
-	char szFold[MAX_PATH * 2];
+	char szFold[PATH_MAX * 2];
 	strcpy(szFold,dir);
 	int flgs= \
 		BIF_STATUSTEXT		  |
@@ -365,5 +396,7 @@ AVSValue __cdecl  RT_FSelFolder(AVSValue args, void* user_data, IScriptEnvironme
 		if(debug) dprintf("%sNot a Filesystem Object",myName);
 		return -1;
 	}
+	*/
+
 	return env->SaveString(szFold);
 }

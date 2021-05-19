@@ -16,7 +16,7 @@
 */
 
 #include "RT_Stats.h"
-
+#include <algorithm>
 
 	enum {
 		DB_FIELDS		= 1024,
@@ -75,16 +75,16 @@ AVSValue __cdecl RT_DBaseAlloc(AVSValue args, void* user_data, IScriptEnvironmen
 	const int StringlenMax = args[3].AsInt(256);
 	if(*fn=='\0')	env->ThrowError("%sEmpty Filename",myName);
 
-	__int64 MaxFileSz = 0xFFFFF00000i64 ;												// 1TB - 1MB
+	int64_t MaxFileSz = 0xFFFFF000000LL ;												// 1TB - 1MB
 
 	int fatvol = QueryFatVolume(fn);
 	if(fatvol < 0)	env->ThrowError("%sCannot query Filesystem",myName);
 
-	__int64 dfs = QueryDiskFreeSpace(fn) - 0x100000;									// minus 1MB
+	int64_t dfs = QueryDiskFreeSpace(fn) - 0x100000;									// minus 1MB
 	if(dfs < 0)	env->ThrowError("%sCannot query DiskFreeSpace",myName);
-	// dprintf("DiskFreeSpace=$%I64X",dfs);
-	__int64 maxfs = (fatvol==1)? 0xFFF00000i64 : MaxFileSz; 	// limit 4GB on FAT32
-	__int64 maxcurdfs=min(maxfs,dfs);							// Max current space, Limit to free space available to user.
+	// dprintf("DiskFreeSpace=$%0LLX",dfs);
+	int64_t maxfs = (fatvol==1)? 0xFFF000000LL : MaxFileSz; 	// limit 4GB on FAT32
+	int64_t maxcurdfs=std::min(maxfs,dfs);							// Max current space, Limit to free space available to user.
 
 	int maxfieldsz = 0;
 	MYDBINF *dbinf = NULL;
@@ -135,16 +135,16 @@ AVSValue __cdecl RT_DBaseAlloc(AVSValue args, void* user_data, IScriptEnvironmen
 			}
 			dbinf[fld].fieldsize=fsz;
 			off+=fsz;
-			maxfieldsz=max(fsz,maxfieldsz);
+			maxfieldsz=std::max(fsz,maxfieldsz);
 		}
 		if(wr == 1) {
 			wr = 0;
 			if(fld==0)						strcpy(ebf,"TypeString zero fields");
 			else if(typestr[ix] != '\0')	sprintf(ebf,"TypeString Too many fields (1 -> %d)",DB_FIELDS);
 			else {
-				__int64 maxrecords=min((MaxFileSz - DB_OFFSET) / off,0x7FFFFFFEI64); // max possible records on any filesystem
-				__int64 recmaxfs = min((maxfs  - DB_OFFSET) / off,0x7FFFFFFEI64);
-				__int64 recmaxdfs= min((maxcurdfs - DB_OFFSET) / off,0x7FFFFFFEI64);
+				int64_t maxrecords=std::min<long long int>((MaxFileSz - DB_OFFSET) / off,0x7FFFFFFE0LL); // max possible records on any filesystem
+				int64_t recmaxfs = std::min<long long int>((maxfs  - DB_OFFSET) / off,0x7FFFFFFE0LL);
+				int64_t recmaxdfs= std::min<long long int>((maxcurdfs - DB_OFFSET) / off,0x7FFFFFFE0LL);
 				db.name		= RTDB;
 				db.ver		= RTDBVER;
 				db.offset	= DB_OFFSET;
@@ -171,7 +171,7 @@ AVSValue __cdecl RT_DBaseAlloc(AVSValue args, void* user_data, IScriptEnvironmen
 						memset(bf,0,bfsz);
 						if((fp=fopen(fn, "wb" ))==NULL)		strcpy(ebf,"Cannot create DBase file");
 						else {
-							__int64 clrbytes = DB_OFFSET + __int64(db.records) * db.recordsz;
+							int64_t clrbytes = DB_OFFSET + int64_t(db.records) * db.recordsz;
 							int sods = int(clrbytes / bfsz);
 							int odds = int(clrbytes % bfsz);
 							wr=1;
@@ -242,9 +242,9 @@ AVSValue __cdecl RT_DBaseRecordsMax(AVSValue args, void* user_data, IScriptEnvir
 	fclose(fp);
 	int recmx=db.recordmax;
 	if(current) {
-		__int64 dfs = QueryMaxFileSize(fn);
+		int64_t dfs = QueryMaxFileSize(fn);
 		if(dfs < 0)	env->ThrowError("%sCannot query MaxFileSize",myName);
-		recmx = int(min(dfs / db.recordsz + db.records,0x7FFFFFFEI64));
+		recmx = int(std::min<long long int>(dfs / db.recordsz + db.records,0x7FFFFFFE0LL));
 	}
 	return  recmx;
 }
@@ -303,7 +303,7 @@ AVSValue __cdecl RT_DBaseFieldSize(AVSValue args, void* user_data, IScriptEnviro
 
 AVSValue DBaseGetID_Lo(MYDB *db,int idix) {
 	AVSValue ret;
-	idix = min(max(0,idix),127);
+	idix = std::min(std::max(0,idix),127);
 	int idoff   = idix / 32;
 	int idbitix = idix & 0x1F;
 	unsigned int idflgs = db->idtype[idoff];
@@ -335,7 +335,7 @@ AVSValue __cdecl RT_DBaseGetID(AVSValue args, void* user_data, IScriptEnvironmen
 
 void DBaseSetID_Lo(MYDB *db,int idix,AVSValue avs) {
 	bool isI = avs.IsInt();
-	idix = min(max(0,idix),127);
+	idix = std::min(std::max(0,idix),127);
 	int idoff   = idix / 32;
 	int idbitix = idix & 0x1F;
 	unsigned int idflgs = db->idtype[idoff];
@@ -656,7 +656,7 @@ AVSValue __cdecl RT_DBaseGetField(AVSValue args, void* user_data, IScriptEnviron
 				sprintf(ebf,"Internal Error, Illegal DBase Field type=%d",type);
 			else if(fieldsize >= sizeof(bf) && ((bfp = new char[fieldsize + 1])==NULL))	// nul term needed for string
 				strcpy(ebf,"Cannot Allocate Field buffer");
-			else if(_fseeki64(fp,db.offset + __int64(record) * db.recordsz + fieldoff,SEEK_SET))
+			else if(fseeko(fp,db.offset + int64_t(record) * db.recordsz + fieldoff,SEEK_SET))
 				sprintf(ebf,"Cannot seek to DB(%d:%d)",record,field);
 			else if(fread(bfp,fieldsize,1,fp)!=1)
 				sprintf(ebf,"Cannot read field DB(%d:%d)",record,field);
@@ -725,7 +725,7 @@ AVSValue __cdecl RT_DBaseSetField(AVSValue args, void* user_data, IScriptEnviron
 					sprintf(ebf,"DB(%d:%d) : Internal Error, Illegal DBase Field type=%d",record,fldNo,type);
 				else if(atyp!=type && !((type==DB_BIN && atyp==1) || (type==DB_DOUBLE && atyp==2)))
 					sprintf(ebf,"DB(%d:%d) : Incorrect Data Type=%s, expecting %s",record,fldNo,ts[atyp],ts[type]);
-				else if(_fseeki64(fp,db.offset + __int64(record) * db.recordsz + fieldoff,SEEK_SET))
+				else if(fseeko(fp,db.offset + int64_t(record) * db.recordsz + fieldoff,SEEK_SET))
 					sprintf(ebf,"DB(%d:%d) : Cannot seek to Field",record,fldNo);
 				else {
 					// *** MUST be in scope for the file write ***
@@ -812,7 +812,7 @@ AVSValue __cdecl RT_DBaseSet(AVSValue args, void* user_data, IScriptEnvironment*
 		sprintf(ebf,"cannot allocate DBInf @DB(%d)",record);
 	else if(fseek(fp, db.infoffset,SEEK_SET) || fread(dbinf,fields*sizeof(dbinf[0]),1,fp)!=1)
 		sprintf(ebf,"cannot read DBInf @DB(%d)",record);
-	else if(_fseeki64(fp,db.offset + __int64(record) * db.recordsz,SEEK_SET))
+	else if(fseeko(fp,db.offset + int64_t(record) * db.recordsz,SEEK_SET))
 		sprintf(ebf,"DB(%d) : Cannot seek to Record",record);
 	else {
 		bool fieldsOnly = (bfsz < recordsz);
@@ -889,16 +889,16 @@ AVSValue __cdecl RT_DBaseExtend(AVSValue args, void* user_data, IScriptEnvironme
 	size_t wr = 0;
 	if(add == 0) wr=1;
 	else {
-		__int64 dfs = QueryMaxFileSize(fn);
+		int64_t dfs = QueryMaxFileSize(fn);
 		if(dfs < 0)	sprintf(ebf,"%sCannot query MaxFileSize",myName);
 		else {
-			int lim = int(min(dfs / db.recordsz + db.records,0x7FFFFFFEI64));
+			int lim = int(std::min<long long int>(dfs / db.recordsz + db.records,0x7FFFFFFE0LL));
 			int extmax = lim - db.records;
 			if(add > extmax) {
 				sprintf(ebf,"Add %d, Overflows available space(%d extend available)",add,extmax);
 			} else {
-				__int64 clrbytes = __int64(add) * db.recordsz;
-				int bfsz = (clrbytes>(64*1024I64)) ? 64*1024 : int(clrbytes);
+				int64_t clrbytes = int64_t(add) * db.recordsz;
+				int bfsz = (clrbytes>(64*10240LL)) ? 64*1024 : int(clrbytes);
 				BYTE *bf = new BYTE[bfsz];
 				if(bf == NULL) {
 					strcpy(ebf,"Allocating memory buffer");
@@ -906,7 +906,7 @@ AVSValue __cdecl RT_DBaseExtend(AVSValue args, void* user_data, IScriptEnvironme
 					int sods = int(clrbytes  / bfsz);
 					int odds = int(clrbytes  % bfsz);
 					memset(bf,0,bfsz);
-					if(_fseeki64(fp,db.offset + __int64(db.records) * db.recordsz,SEEK_SET))
+					if(fseeko(fp,db.offset + int64_t(db.records) * db.recordsz,SEEK_SET))
 						sprintf(ebf,"DB(%d) : Cannot seek to END Record",db.records);
 					else {
 						int i;
@@ -961,12 +961,12 @@ AVSValue __cdecl RT_DBaseAppend(AVSValue args, void* user_data, IScriptEnvironme
 		}
 	}
 
-	__int64 dfs = QueryMaxFileSize(fn);
+	int64_t dfs = QueryMaxFileSize(fn);
 
 	if(dfs < 0)	sprintf(ebf,"%sCannot query MaxFileSize",myName);
 	else if(bfp==NULL) sprintf(ebf,"DB(%d) : Cannot Allocate record/field buffer",record);
 	else {
-		int recmax = int(min(dfs / db.recordsz + db.records,0x7FFFFFFEI64));
+		int recmax = int(std::min<long long int>(dfs / db.recordsz + db.records,0x7FFFFFFE0LL));
 		if(record >= recmax)			sprintf(ebf,"DB(%d) : Reached DBase available Limit %d",record,recmax);
 		else if(fields < 1 || fields > DB_FIELDS)
 			sprintf(ebf,"DB(%d) : Internal Error, Invalid number of fields %d(1 -> %d)",record,fields,DB_FIELDS);
@@ -976,7 +976,7 @@ AVSValue __cdecl RT_DBaseAppend(AVSValue args, void* user_data, IScriptEnvironme
 			sprintf(ebf,"cannot allocate DBInf @DB(%d)",record);
 		else if(fseek(fp, db.infoffset,SEEK_SET) || fread(dbinf,fields*sizeof(dbinf[0]),1,fp)!=1)
 			sprintf(ebf,"cannot read DBInf @DB(%d)",record);
-		else if(_fseeki64(fp,db.offset + __int64(db.records) * db.recordsz,SEEK_SET))
+		else if(fseeko(fp,db.offset + int64_t(db.records) * db.recordsz,SEEK_SET))
 			sprintf(ebf,"DB(%d) : Cannot seek to End Record",db.records);
 		else {
 			++db.records;				// New number of records
@@ -1082,7 +1082,7 @@ AVSValue __cdecl RT_DBaseFindSeq(AVSValue args, void* user_data, IScriptEnvironm
 		while(low <= high && ebf[0]=='\0') {
 			int t;
 			int mid = (low + high) / 2;
-			if(_fseeki64(dbfp,db.offset + __int64(mid) * RecordSz + EndFieldOff ,SEEK_SET))
+			if(fseeko(dbfp,db.offset + int64_t(mid) * RecordSz + EndFieldOff ,SEEK_SET))
 				{sprintf(ebf,"Cannot seek to DB(%d,%d)",mid,EndField); break;}
 			size_t rd = fread(&t,sizeof(t),1,dbfp);
 			if(rd != 1)
@@ -1090,7 +1090,7 @@ AVSValue __cdecl RT_DBaseFindSeq(AVSValue args, void* user_data, IScriptEnvironm
 			if(t < Frame) {
 				low = mid + 1;
 			} else {
-				if(_fseeki64(dbfp,db.offset + __int64(mid) * RecordSz + StartFieldOff ,SEEK_SET))
+				if(fseeko(dbfp,db.offset + int64_t(mid) * RecordSz + StartFieldOff ,SEEK_SET))
 					{sprintf(ebf,"Cannot seek to DB(%d,%d)",mid,StartField); break;}
 				rd = fread(&t,sizeof(t),1,dbfp);
 				if(rd != 1)
@@ -1125,14 +1125,14 @@ static int dbaseCompareFields_Lo(FILE *fp,char *ebf,const MYDB &db,const int &fc
 			const int fieldsize	= dbinf[k].fieldsize;
 			const int fieldoff	= dbinf[k].fieldoff;
 			if(pivotbf==NULL || pivotrec!=0) {
-				if((_fseeki64(fp,offset + __int64(a) * recordsz + fieldoff,SEEK_SET)) ||
+				if((fseeko(fp,offset + int64_t(a) * recordsz + fieldoff,SEEK_SET)) ||
 					(fread(fbf[0],fieldsize,1,fp)!=1))		sprintf(ebf,"Cannot read Record1 field DB(%d:%d)",a,fld);
 			} else {
 				memcpy(fbf[0],pivotbf+fieldoff,fieldsize);	// Get field from pivotbf
 			}
 			if(ebf[0]!=0)	break;
 			if(pivotbf==NULL || pivotrec!=1) {
-				if((_fseeki64(fp,offset + __int64(b) * recordsz + fieldoff,SEEK_SET)) ||
+				if((fseeko(fp,offset + int64_t(b) * recordsz + fieldoff,SEEK_SET)) ||
 					(fread(fbf[1],fieldsize,1,fp)!=1))		sprintf(ebf,"Cannot read Record2 field DB(%d:%d)",b,fld);
 			} else {
 				memcpy(fbf[1],pivotbf+fieldoff,fieldsize);	// Get field from pivotbf
@@ -1165,7 +1165,7 @@ static int dbaseCompareFields_Lo(FILE *fp,char *ebf,const MYDB &db,const int &fc
 					fbf[1][fieldsize] = '\0';
 					x = (sig)
 						? strcmp(fbf[0],fbf[1])
-						: _strcmpi(fbf[0],fbf[1]);
+						: strcasecmp(fbf[0],fbf[1]);
 					x = (x<0) ? -1 : (x>0) ? 1 : 0;
 				}
 			}
@@ -1177,23 +1177,23 @@ static int dbaseCompareFields_Lo(FILE *fp,char *ebf,const MYDB &db,const int &fc
 static int dbaseSwapRecords_Lo(FILE *fp,char *ebf,const MYDB &db,char *recbf[2],const int bfsz,const int a,const int b) {
 	int swapped = 0;
 	if(ebf[0]==0 && a != b) {
-		__int64 off1 = db.offset + __int64(a)*db.recordsz;
-		__int64 off2 = db.offset + __int64(b)*db.recordsz;
+		int64_t off1 = db.offset + int64_t(a)*db.recordsz;
+		int64_t off2 = db.offset + int64_t(b)*db.recordsz;
 		const int sods = db.recordsz / bfsz;
 		const int odds = db.recordsz % bfsz;
 		for(int s=0; s<sods && ebf[0]==0 ;++s) {
-			if((_fseeki64(fp,off1,SEEK_SET))||(fread(recbf[0],bfsz,1,fp)!=1))		sprintf(ebf,"Cannot read  Record1 DB(%d)",a);
-			else if((_fseeki64(fp,off2,SEEK_SET))||(fread(recbf[1],bfsz,1,fp)!=1))	sprintf(ebf,"Cannot read  Record2 DB(%d)",b);
-			else if((_fseeki64(fp,off1,SEEK_SET))||(fwrite(recbf[1],bfsz,1,fp)!=1))	sprintf(ebf,"Cannot write Record1 DB(%d)",a);
-			else if((_fseeki64(fp,off2,SEEK_SET))||(fwrite(recbf[0],bfsz,1,fp)!=1))	sprintf(ebf,"Cannot write Record2 DB(%d)",b);
+			if((fseeko(fp,off1,SEEK_SET))||(fread(recbf[0],bfsz,1,fp)!=1))		sprintf(ebf,"Cannot read  Record1 DB(%d)",a);
+			else if((fseeko(fp,off2,SEEK_SET))||(fread(recbf[1],bfsz,1,fp)!=1))	sprintf(ebf,"Cannot read  Record2 DB(%d)",b);
+			else if((fseeko(fp,off1,SEEK_SET))||(fwrite(recbf[1],bfsz,1,fp)!=1))	sprintf(ebf,"Cannot write Record1 DB(%d)",a);
+			else if((fseeko(fp,off2,SEEK_SET))||(fwrite(recbf[0],bfsz,1,fp)!=1))	sprintf(ebf,"Cannot write Record2 DB(%d)",b);
 			off1 += bfsz;
 			off2 += bfsz;
 		}
 		if(ebf[0]==0 && odds > 0) {
-			if((_fseeki64(fp,off1,SEEK_SET))||(fread(recbf[0],odds,1,fp)!=1))		sprintf(ebf,"Cannot read  Record1 DB(%d)",a);
-			else if((_fseeki64(fp,off2,SEEK_SET))||(fread(recbf[1],odds,1,fp)!=1))	sprintf(ebf,"Cannot read  Record2 DB(%d)",b);
-			else if((_fseeki64(fp,off1,SEEK_SET))||(fwrite(recbf[1],odds,1,fp)!=1))	sprintf(ebf,"Cannot write Record1 DB(%d)",a);
-			else if((_fseeki64(fp,off2,SEEK_SET))||(fwrite(recbf[0],odds,1,fp)!=1))	sprintf(ebf,"Cannot write Record2 DB(%d)",b);
+			if((fseeko(fp,off1,SEEK_SET))||(fread(recbf[0],odds,1,fp)!=1))		sprintf(ebf,"Cannot read  Record1 DB(%d)",a);
+			else if((fseeko(fp,off2,SEEK_SET))||(fread(recbf[1],odds,1,fp)!=1))	sprintf(ebf,"Cannot read  Record2 DB(%d)",b);
+			else if((fseeko(fp,off1,SEEK_SET))||(fwrite(recbf[1],odds,1,fp)!=1))	sprintf(ebf,"Cannot write Record1 DB(%d)",a);
+			else if((fseeko(fp,off2,SEEK_SET))||(fwrite(recbf[0],odds,1,fp)!=1))	sprintf(ebf,"Cannot write Record2 DB(%d)",b);
 		}
 		swapped = 1;
 	}
@@ -1239,11 +1239,11 @@ AVSValue __cdecl RT_DBaseInsertSort(AVSValue args, void* user_data, IScriptEnvir
 				if((fseek(fp, db.infoffset+f[i]*sizeof(dbinf[0]),SEEK_SET)) || (fread(&dbinf[i],sizeof(dbinf[0]),1,fp)!=1))
 					sprintf(ebf,"cannot read DBInf[%d]",f[i]);
 				else {
-					maxfldsz=max(dbinf[i].fieldsize,maxfldsz);
+					maxfldsz=std::max(dbinf[i].fieldsize,maxfldsz);
 				}
 			}
 		}
-		const int bfsz = min(recordsz,16*1024);
+		const int bfsz = std::min(recordsz,16*1024);
 		for(i=0;i<2&&ebf[0]==0;++i) {if((fbf[i] = new char[maxfldsz+1]) == NULL)	sprintf(ebf,"cannot alloc field buffer");}
 		for(i=0;i<2&&ebf[0]==0;++i) {if((recbf[i] = new char[bfsz]) == NULL)		sprintf(ebf,"cannot alloc record buffer");}
 		int incr = (ascend) ? 1 : -1;
@@ -1306,8 +1306,8 @@ static void dbaseQuicksort_Lo(FILE *fp,char *ebf,const MYDB &db,const int &fcnt,
             pivot=low;												// We swapped pivot to low
 			if(pivotbf!=NULL) {
 				// buffer pivot, for use in comparisons
-				__int64 off1 = db.offset + __int64(pivot)*db.recordsz;
-				if((_fseeki64(fp,off1,SEEK_SET))||(fread(pivotbf,bfsz,1,fp)!=1)) {
+				int64_t off1 = db.offset + int64_t(pivot)*db.recordsz;
+				if((fseeko(fp,off1,SEEK_SET))||(fread(pivotbf,bfsz,1,fp)!=1)) {
 					sprintf(ebf,"Cannot read  Record DB(%d)",pivot);
 					pivotbf=NULL;
 				}
@@ -1461,11 +1461,11 @@ QuickSort Three-Way Partitioning.
 				if((fseek(fp, db.infoffset+f[i]*sizeof(dbinf[0]),SEEK_SET)) || (fread(&dbinf[i],sizeof(dbinf[0]),1,fp)!=1))
 					sprintf(ebf,"cannot read DBInf[%d]",f[i]);
 				else {
-					maxfldsz=max(dbinf[i].fieldsize,maxfldsz);
+					maxfldsz=std::max(dbinf[i].fieldsize,maxfldsz);
 				}
 			}
 		}
-		const int bfsz = min(recordsz,16*1024);
+		const int bfsz = std::min(recordsz,16*1024);
 		for(i=0;i<2&&ebf[0]==0;++i) {if((fbf[i] = new char[maxfldsz+1]) == NULL)	sprintf(ebf,"cannot alloc field buffer");}
 		for(i=0;i<2&&ebf[0]==0;++i) {if((recbf[i] = new char[bfsz]) == NULL)		sprintf(ebf,"cannot alloc record buffer");}
 		if(bfsz==recordsz) {
@@ -1517,7 +1517,7 @@ AVSValue __cdecl RT_DBaseReadCSV(AVSValue args, void* user_data, IScriptEnvironm
 	// we use read in binary mode so C does not mess with file size / seek etc.
 	if(!(txtfp = fopen(txtfn, "rb")))										strcpy(ebf,"Cannot Open CSV file");
 	else if((fseek(txtfp, 0, SEEK_END)!=0) || ((flen=ftell(txtfp)) == -1L))	strcpy(ebf,"Cannot seek in CSV file");
-	else if(rewind(txtfp), (chk=min(flen,3))!=0) {
+	else if(rewind(txtfp), (chk=std::min<long int>(flen,3))!=0) {
 		char tmpbf[16];
 		long rd;
 		if((rd = (long)fread(tmpbf, 1, chk, txtfp)) != chk)
@@ -1537,12 +1537,12 @@ AVSValue __cdecl RT_DBaseReadCSV(AVSValue args, void* user_data, IScriptEnvironm
 			const int fields = db.fields;
 			const int recordsz=db.recordsz;
 			if(EndField == -1) EndField = fields-1;
-			__int64 clrbytes = db.recordsz;
+			int64_t clrbytes = db.recordsz;
 			int clrbfsz = (clrbytes>TSZ) ? TSZ : int(clrbytes);
 			const int sods = int(clrbytes  / clrbfsz);
 			const int odds = int(clrbytes  % clrbfsz);
-			__int64 dfs = QueryMaxFileSize(dbfn);
-			int lim = int(min(dfs / db.recordsz + db.records,0x7FFFFFFEI64));
+			int64_t dfs = QueryMaxFileSize(dbfn);
+			int lim = int(std::min<long long int>(dfs / db.recordsz + db.records,0x7FFFFFFE0LL));
 			if(StartField<0)
 				strcpy(ebf,"-ve StartField");
 			else if(StartField>=fields)
@@ -1586,7 +1586,7 @@ AVSValue __cdecl RT_DBaseReadCSV(AVSValue args, void* user_data, IScriptEnvironm
 					if(db.records+1 > lim) {
 						strcpy(ebf,"Overflows available disk space");
 					} else {
-						if(_fseeki64(dbfp,db.offset + __int64(db.records) * db.recordsz,SEEK_SET))
+						if(fseeko(dbfp,db.offset + int64_t(db.records) * db.recordsz,SEEK_SET))
 							strcpy(ebf,"Cannot seek to END Record");
 						else {
 							int i,wr;
@@ -1610,7 +1610,7 @@ AVSValue __cdecl RT_DBaseReadCSV(AVSValue args, void* user_data, IScriptEnvironm
 						const int fieldoff	= dbinf[field].fieldoff;
 						if(type<DB_BOOL || type > DB_DOUBLE)
 							strcpy(ebf,"Internal Error, Illegal DBase Field type");
-						else if(_fseeki64(dbfp,db.offset + __int64(record) * db.recordsz + fieldoff,SEEK_SET))
+						else if(fseeko(dbfp,db.offset + int64_t(record) * db.recordsz + fieldoff,SEEK_SET))
 							strcpy(ebf,"Cannot seek in DB");
 						else {
 							char *stopstring;
@@ -1809,7 +1809,7 @@ AVSValue __cdecl RT_DBaseWriteCSV(AVSValue args, void* user_data, IScriptEnviron
 	}
 
 	bool Append =args[8].AsBool(false);
-	char * txtwmode = (Append && txexists) ? "r+" : "w";
+	const char * txtwmode = (Append && txexists) ? "r+" : "w";
 	int field;
 	if(low<0)									sprintf(ebf,"low(%d) cannot b -ve",low);
 	else if(high<low)							sprintf(ebf,"low(%d) <= high(%d)",low,high);
@@ -1866,7 +1866,7 @@ AVSValue __cdecl RT_DBaseWriteCSV(AVSValue args, void* user_data, IScriptEnviron
 						const int fieldoff	= dbinf[field].fieldoff;
 						if(type<DB_BOOL || type > DB_DOUBLE)
 							{strcpy(ebf,"Internal Error, Illegal DBase Field type"); break;}
-						if(_fseeki64(dbfp,db.offset + __int64(record) * db.recordsz + fieldoff,SEEK_SET))
+						if(fseeko(dbfp,db.offset + int64_t(record) * db.recordsz + fieldoff,SEEK_SET))
 							{strcpy(ebf,"Cannot seek in DB"); break;}
 						if((rd = (int)fread(FieldBuffer,fieldsize, 1, dbfp)) != 1)
 							{strcpy(ebf,"Cannot read from DB file"); break;}
@@ -1878,18 +1878,18 @@ AVSValue __cdecl RT_DBaseWriteCSV(AVSValue args, void* user_data, IScriptEnviron
 							if(wr==1) wr = (int)fwrite(StrDelimiter,StrDelimiterLen, 1, txtfp);
 						} else if(type==DB_BOOL) {
 							bool b =*((BYTE *)FieldBuffer) == 0;
-							char *dat;
+							const char *dat;
 							if(b)	dat = (c=='u'||c=='U') ? "TRUE" : (c=='l'||c=='L') ? "true" : "True";
 							else	dat = (c=='u'||c=='U') ? "FALSE" : (c=='l'||c=='L') ? "false" : "False";
 							wr = (int)fwrite(dat,strlen(dat), 1, txtfp);
 						} else if(type==DB_INT) {
 							int dat = *((int *)FieldBuffer);
-							char *format =  (c=='$')?"$%0.8X":(c=='x')?"%0.8x":(c=='X')?"%0.8X":"%d";
+							const char *format =  (c=='$')?"$%0.8X":(c=='x')?"%0.8x":(c=='X')?"%0.8X":"%d";
 							sprintf(tbf,format,dat);
 							wr = (int)fwrite(tbf,strlen(tbf), 1, txtfp);
 						} else if(type==DB_BIN) {
 							int dat = *((BYTE *)FieldBuffer);
-							char *format =  (c=='$')?"$%0.2X":(c=='x')?"%0.2x":(c=='X')?"%0.2X":"%d";
+							const char *format =  (c=='$')?"$%0.2X":(c=='x')?"%0.2x":(c=='X')?"%0.2X":"%d";
 							sprintf(tbf,format,dat);
 							wr = (int)fwrite(tbf,strlen(tbf), 1, txtfp);
 						} else if(type==DB_FLOAT) {

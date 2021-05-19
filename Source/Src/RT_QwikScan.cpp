@@ -15,6 +15,7 @@
 */
 
 #include "RT_Stats.h"
+#include <algorithm>
 
 // FingerPrint
 
@@ -74,7 +75,7 @@ extern int __cdecl	RT_Fingerprint_Lo(const AVSValue &std,const AVSValue &xtra,FI
 int __cdecl RT_Fingerprint_Lo(const AVSValue &std,const AVSValue &xtra,FINGER &finger,unsigned int *hist,IScriptEnvironment* env,double LTol) {
 // NOTE, LTol optional default 0.0
 	char *myName="RT_Fingerprint_Lo: ";
-	LTol  = max(min(LTol,LUMATOL_MAX),0.0);
+	LTol  = std::max(std::min(LTol,LUMATOL_MAX),0.0);
 	MYLO mylo;
 	RT_MYstats_Lo(RTHIST_F,std,xtra,mylo,myName,env,hist);				// Get luma histogram
 	// FingerPrint Component Histogram Ranges
@@ -100,13 +101,13 @@ int __cdecl RT_Fingerprint_Lo(const AVSValue &std,const AVSValue &xtra,FINGER &f
 				finger.hilim[i]=smd;					// EXACT FINGERPRINT components, search identical frames OR ARR FINGER
 			} else {
 				sm=0;
-				s2 = max(s-Tol,0);						// expand hilim range by LumaTol Int
-				e2 = min(e+Tol,255);
+				s2 = std::max(s-Tol,0);						// expand hilim range by LumaTol Int
+				e2 = std::min(e+Tol,255);
 				for(j=s2;j<=e2;++j)
 					sm += hist[j];
 				finger.hilim[i] = sm * 255.0 / Pixels;	// cannot be bigger than 255.0
 			}
-			DPRINTF("%s %3d] lo=%7.3f hi=%7.3f",myName,i,finger.lolim[i],finger.hilim[i])
+			dprintf("%s %3d] lo=%7.3f hi=%7.3f",myName,i,finger.lolim[i],finger.hilim[i]);
 		}
 	} else {
 		const double AvePixPerLevel = Pixels / 256.0;
@@ -128,10 +129,10 @@ int __cdecl RT_Fingerprint_Lo(const AVSValue &std,const AVSValue &xtra,FINGER &f
 			double smd = sm - (frac_cnt_s + frac_cnt_e);		// Fractional reduction of extremities
 			smd -= 2.0;											// Round down pixel count by 1 pixel for each extremity
 			smd = smd * 255.0 / Pixels;							// Pixel count range 0.0 -> 255.0
-			smd = max(min(255.0,smd),0.0);						// Ensure valid range limit
+			smd = std::max(std::min(255.0,smd),0.0);						// Ensure valid range limit
 			finger.lolim[i] = smd;
-			s2 = max(s-Tol,0);									// expand hilim range by LumaTol Int
-			e2 = min(e+Tol,255);
+			s2 = std::max(s-Tol,0);									// expand hilim range by LumaTol Int
+			e2 = std::min(e+Tol,255);
 			sm=0;
 			for(j=s2;j<=e2;++j)
 				sm += hist[j];
@@ -150,7 +151,7 @@ int __cdecl RT_Fingerprint_Lo(const AVSValue &std,const AVSValue &xtra,FINGER &f
 			smd = sm + (frac_cnt_s + frac_cnt_e);				// Fractional increase of extremities
 			smd += 2.0;											// Round up pixel count by 1 pixel for each extremity
 			smd = smd * 255.0 / Pixels;							// Pixel count range 0.0 -> 255.0
-			smd = max(min(255.0,smd),0.0);						// Ensure valid range limit
+			smd = std::max(std::min(255.0,smd),0.0);						// Ensure valid range limit
 			finger.hilim[i] = smd;
 		}
 	}
@@ -263,7 +264,7 @@ AVSValue __cdecl RT_QwikScanEstimateLumaTol(AVSValue args, void* user_data, IScr
 					// Do NOT base off sm to keep comparable across different frames
 					// QwikScan will use greatest possible interpretation for fraction
 					fraction = double(dif) / (AvePixPerLevel*2.0);
-					fraction = min(max(0.0,fraction),1.0);
+					fraction = std::min(std::max(0.0,fraction),1.0);
 					break;
 				}
 			}
@@ -299,7 +300,7 @@ AVSValue __cdecl RT_QwikScanEstimateLumaTol(AVSValue args, void* user_data, IScr
 						// QwikScan will use greatest possible interpretation for fraction
 						fraction = double(dif) / AvePixPerLevel;
 					}
-					fraction = min(max(0.0,fraction),1.0);
+					fraction = std::min(std::max(0.0,fraction),1.0);
 					break;
 				}
 			}
@@ -318,7 +319,7 @@ AVSValue __cdecl RT_QwikScanEstimateLumaTol(AVSValue args, void* user_data, IScr
 		mantissa = mantissa + add;
 		result = ldexp(mantissa,exponent);
 	}
-	return  min(result,LUMATOL_MAX);
+	return  std::min(result,LUMATOL_MAX);
 }
 
 
@@ -619,12 +620,12 @@ AVSValue __cdecl RT_QwikScanCreate(AVSValue args, void* user_data, IScriptEnviro
 			flim = framecount - int(framecount / 20.0 * fix);
 
 			if(odds > 0) {
-				if(_fseeki64(fp,arr.offset+__int64(blks)*blknel*sizeof(bf[0]),SEEK_SET)||fread(bf,odds * sizeof(bf[0]),1,fp)!=1) {
+				if(fseeko(fp,arr.offset+int64_t(blks)*blknel*sizeof(bf[0]),SEEK_SET)||fread(bf,odds * sizeof(bf[0]),1,fp)!=1) {
 					strcpy(msg,"reading Next Locator Array ODDS");
 				} else {
 					for(el=odds;msg[0]=='\0' && (el-=FINGERELS)>=0;) {
 						--frame;
-						if(_fseeki64(fp3,arr3.offset+frame*__int64(FINGERELS*256*sizeof(arrt[0])),SEEK_SET)||
+						if(fseeko(fp3,arr3.offset+frame*int64_t(FINGERELS*256*sizeof(arrt[0])),SEEK_SET)||
 								fwrite(arrt,FINGERELS*256*sizeof(arrt[0]),1,fp3)!= 1) {
 							strcpy(msg,"writing Next Locator Array ODDS");
 						} else {
@@ -642,12 +643,12 @@ AVSValue __cdecl RT_QwikScanCreate(AVSValue args, void* user_data, IScriptEnviro
 			}
 
 			for(blk=blks;msg[0]=='\0' && --blk>=0;) {
-				if(_fseeki64(fp,arr.offset+__int64(blk)*blknel*sizeof(bf[0]),SEEK_SET)||fread(bf,blknel*sizeof(bf[0]),1,fp)!=1) {
+				if(fseeko(fp,arr.offset+int64_t(blk)*blknel*sizeof(bf[0]),SEEK_SET)||fread(bf,blknel*sizeof(bf[0]),1,fp)!=1) {
 					strcpy(msg,"reading Next Locator Array");
 				} else {
 					for(el=blknel;msg[0]=='\0' && (el-=FINGERELS)>=0;) {
 						--frame;
-						if(_fseeki64(fp3,arr3.offset+frame*__int64(FINGERELS*256*sizeof(arrt[0])),SEEK_SET)||fwrite(arrt,FINGERELS*256*sizeof(arrt[0]),1,fp3) != 1) {
+						if(fseeko(fp3,arr3.offset+frame*int64_t(FINGERELS*256*sizeof(arrt[0])),SEEK_SET)||fwrite(arrt,FINGERELS*256*sizeof(arrt[0]),1,fp3) != 1) {
 							strcpy(msg,"writing Next Locator Array");
 						} else {
 							for(i=FINGERELS;--i>=0;) {
@@ -949,7 +950,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 	int	   mni[FINGERELS];
 	int	   mxi[FINGERELS];
 
-    MaxDistance	= min(max(0,MaxDistance),abs((PrvNxtFlag==1?records-1:0)-SearchStart));	// Silent limit
+    MaxDistance	= std::min(std::max(0,MaxDistance),abs((PrvNxtFlag==1?records-1:0)-SearchStart));	// Silent limit
 
 	AVSValue std[STD_SIZE]	=	{FindClip,FindFrame,0,xx,yy,ww,hh,false};
 	AVSValue xtra[XTRA_SIZE];
@@ -1010,7 +1011,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 	int	Result	=	-1;												// Not Yet Found
 
 	if(Inclusive) {													//  User wants to also compare with SearchStart.
-		if(_fseeki64(fp,arr.offset + SearchStart*__int64(FINGERELS*sizeof(arrbf[0])),SEEK_SET) || fread(arrbf,FINGERELS*sizeof(arrbf[0]),1,fp)!=1) {
+		if(fseeko(fp,arr.offset + SearchStart*int64_t(FINGERELS*sizeof(arrbf[0])),SEEK_SET) || fread(arrbf,FINGERELS*sizeof(arrbf[0]),1,fp)!=1) {
 			delete [] ibf;
 			delete [] hist;
 			fclose(fp);
@@ -1023,12 +1024,12 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 				 ++BinsFailed;
 		}
 		if(BinsFailed<=FpFailMax) {
-			DPRINTF("%sInclusive, BinsFailed(%d) <= FpFailMax(%d)",myName,BinsFailed,FpFailMax)
+			dprintf("%sInclusive, BinsFailed(%d) <= FpFailMax(%d)",myName,BinsFailed,FpFailMax);
 			if(Flags & 0x3F) {
 				if(Flags&(1<<0)) {
 					// "cc[n]i[delta]i[x]i[y]i[w]i[h]i[n2]i[delta2]i[x2]i[y2]i[Interlaced]b[matrix]i"
 					exitargs[2]=SearchStart;
-					double lc = min((1.0 - RT_LumaCorrelation_Lo(AVSValue(exitargs,14),env)) * 255.0,255.0);
+					double lc = std::min((1.0 - RT_LumaCorrelation_Lo(AVSValue(exitargs,14),env)) * 255.0,255.0);
 					if(lc < bm_LC) {			// NO POINT IN BEST MATCH EQUAL @ STARTFRAME
 						bm_LC = lc;
 						bm_LC_Frm=SearchStart;
@@ -1036,12 +1037,12 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 					}
 					if(lc <= LC) {
 						Result = SearchStart;
-						DPRINTF("%sSearchStart, LumaCorrelation Condition Succeeds @%d lc=%f",myName,Result,lc)
+						dprintf("%sSearchStart, LumaCorrelation Condition Succeeds @%d lc=%f",myName,Result,lc);
 						if(XP) {
 							int fnxt = Result;
 							while(abs(SearchStart-(fnxt+PrvNxtFlag)) <= MaxDistance) {
 								exitargs[2]=fnxt+PrvNxtFlag;
-								double lctmp = max(min((1.0-RT_LumaCorrelation_Lo(AVSValue(exitargs,14),env))*255.0,255.0),0.0);
+								double lctmp = std::max(std::min((1.0-RT_LumaCorrelation_Lo(AVSValue(exitargs,14),env))*255.0,255.0),0.0);
 								if(lctmp > lc || (XP==3 &&  lctmp == lc))
 									break;						// not as good OR not Strictly better than
 								if(XP == 1 && lctmp == lc) {	// looking for 'better than', check if better AFTER equal
@@ -1049,7 +1050,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 									int    fnxt_2  = fnxt;
 									while(abs(SearchStart-(fnxt_2+PrvNxtFlag)) <= MaxDistance) {
 										exitargs[2]=fnxt_2+PrvNxtFlag;
-										double lctmp_2 = max(min((1.0-RT_LumaCorrelation_Lo(AVSValue(exitargs,14),env))*255.0,255.0),0.0);
+										double lctmp_2 = std::max(std::min((1.0-RT_LumaCorrelation_Lo(AVSValue(exitargs,14),env))*255.0,255.0),0.0);
 										if(lctmp_2 != lc)
 											break;						// not equal, break
 										fnxt_2 += PrvNxtFlag;
@@ -1066,7 +1067,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 								fnxt += PrvNxtFlag;
 							}
 							if(fnxt != Result) {
-								DPRINTF("%sSearchStart, LumaCorrelation Condition Extended to %d lc=%f",myName,fnxt,lc)
+								dprintf("%sSearchStart, LumaCorrelation Condition Extended to %d lc=%f",myName,fnxt,lc);
 								exit_LC_XP = abs(Result - fnxt);
 								Result = fnxt;
 							}
@@ -1087,7 +1088,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 					}
 					if(ld <= LD) {
 						Result = SearchStart;
-						DPRINTF("%sSearchStart, LumaDifference Condition Succeeds @%d ld=%f",myName,Result,ld)
+						dprintf("%sSearchStart, LumaDifference Condition Succeeds @%d ld=%f",myName,Result,ld);
 						if(XP>0) {
 							int fnxt = Result;
 							while(abs(SearchStart-(fnxt+PrvNxtFlag)) <= MaxDistance) {
@@ -1117,7 +1118,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 								fnxt += PrvNxtFlag;
 							}
 							if(fnxt != Result) {
-								DPRINTF("%sSearchStart, LumaDifference Condition Extended to %d ld=%f",myName,fnxt,ld)
+								dprintf("%sSearchStart, LumaDifference Condition Extended to %d ld=%f",myName,fnxt,ld);
 								exit_LD_XP = abs(Result - fnxt);
 								Result = fnxt;
 							}
@@ -1138,7 +1139,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 					}
 					if(fd <= FD) {
 						Result = SearchStart;
-						DPRINTF("%sSearchStart, FrameDifference Condition Succeeds @%d fd=%f",myName,Result,fd)
+						dprintf("%sSearchStart, FrameDifference Condition Succeeds @%d fd=%f",myName,Result,fd);
 						if(XP) {
 							int fnxt = Result;
 							while(abs(SearchStart-(fnxt+PrvNxtFlag)) <= MaxDistance) {
@@ -1168,7 +1169,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 								fnxt += PrvNxtFlag;
 							}
 							if(fnxt != Result) {
-								DPRINTF("%sSearchStart, FrameDifference Condition Extended to %d fd=%f",myName,fnxt,fd)
+								dprintf("%sSearchStart, FrameDifference Condition Extended to %d fd=%f",myName,fnxt,fd);
 								exit_FD_XP = abs(Result - fnxt);
 								Result = fnxt;
 							}
@@ -1196,7 +1197,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 					}
 					if(Flags&(1<<3) && pd <= PD) { // PD reported if both requested
 						Result = SearchStart;
-						DPRINTF("%sSearchStart, LumaPixelsDifferent Condition Succeeds @%d pd=%f",myName,Result,pd)
+						dprintf("%sSearchStart, LumaPixelsDifferent Condition Succeeds @%d pd=%f",myName,Result,pd);
 						if(XP) {
 							int fnxt = Result;
 							while(abs(SearchStart-(fnxt+PrvNxtFlag)) <= MaxDistance) {
@@ -1227,7 +1228,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 								fnxt += PrvNxtFlag;
 							}
 							if(fnxt != Result) {
-								DPRINTF("%sSearchStart, LumaPixelsDifferent Condition Extended to %d pd=%f",myName,fnxt,pd)
+								dprintf("%sSearchStart, LumaPixelsDifferent Condition Extended to %d pd=%f",myName,fnxt,pd);
 								exit_PC_XP = abs(Result - fnxt);
 								Result = fnxt;
 							}
@@ -1238,7 +1239,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 					}
 					if (Flags&(1<<4) && pc <= PC) {
 						Result = SearchStart;
-						DPRINTF("%sSearchStart, LumaPixelsDifferentCount Condition Succeeds @%d pc=%d",myName,Result,pc)
+						dprintf("%sSearchStart, LumaPixelsDifferentCount Condition Succeeds @%d pc=%d",myName,Result,pc);
 						if(XP) {
 							int fnxt = Result;
 							while(abs(SearchStart-(fnxt+PrvNxtFlag)) <= MaxDistance) {
@@ -1268,7 +1269,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 								fnxt += PrvNxtFlag;
 							}
 							if(fnxt != Result) {
-								DPRINTF("%sSearchStart, LumaPixelsDifferentCount Condition Extended to %d pc=%d",myName,fnxt,pc)
+								dprintf("%sSearchStart, LumaPixelsDifferentCount Condition Extended to %d pc=%d",myName,fnxt,pc);
 								exit_PC_XP = abs(Result - fnxt);
 								Result = fnxt;
 							}
@@ -1290,7 +1291,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 					}
 					if(fm <= FM) {
 						Result = SearchStart;
-						DPRINTF("%sSearchStart, FrameMovement Condition Succeeds @%d fm=%f",myName,Result,fm)
+						dprintf("%sSearchStart, FrameMovement Condition Succeeds @%d fm=%f",myName,Result,fm);
 						if(XP>0) {
 							int fnxt = Result;
 							while(abs(SearchStart-(fnxt+PrvNxtFlag)) <= MaxDistance) {
@@ -1322,7 +1323,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 								fnxt += PrvNxtFlag;
 							}
 							if(fnxt != Result) {
-								DPRINTF("%sSearchStart, FrameMovement Condition Extended to %d fm=%f",myName,fnxt,fm)
+								dprintf("%sSearchStart, FrameMovement Condition Extended to %d fm=%f",myName,fnxt,fm);
 								exit_FM_XP = abs(Result - fnxt);
 								Result = fnxt;
 							}
@@ -1333,17 +1334,17 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 					}
 				}
 				if(exit_Flags==0) {
-					DPRINTF("%sInclusive Match @ %d, EXIT conditions FAIL",myName,SearchStart)
+					dprintf("%sInclusive Match @ %d, EXIT conditions FAIL",myName,SearchStart);
 				} else {
 					Result = SearchStart;
-					DPRINTF("%sInclusive Match, EXIT condition SUCCEEDS @ %d",myName,SearchStart)
+					dprintf("%sInclusive Match, EXIT condition SUCCEEDS @ %d",myName,SearchStart);
 				}
 			} else { // if(Flags & 0x3F)
 				Result = SearchStart;									// All done, closest match possible
-				DPRINTF("%sInclusive Match Returning %d",myName,SearchStart)
+				dprintf("%sInclusive Match Returning %d",myName,SearchStart);
 			}
 		} else {
-			DPRINTF("%sInclusive, BinsFailed(%d) > FpFailMax(%d)",myName,BinsFailed,FpFailMax)
+			dprintf("%sInclusive, BinsFailed(%d) > FpFailMax(%d)",myName,BinsFailed,FpFailMax);
 		} // End of if(BinsFailed<=FpFailMax)
 	}
 
@@ -1354,7 +1355,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 
 		while(abs(SearchStart-Cursor) < MaxDistance) { // Cursor distance MUST be at least 1 less than MaxDistance
 
-			if(_fseeki64(pnfp,pnarr.offset + Cursor*FINGERELS*256*sizeof(int),SEEK_SET) ||
+			if(fseeko(pnfp,pnarr.offset + Cursor*FINGERELS*256*sizeof(int),SEEK_SET) ||
 						fread(ibf,FINGERELS*256*sizeof(int),1,pnfp)!=1) {
 				delete [] ibf;
 				delete [] hist;
@@ -1394,15 +1395,15 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 			}
 
 			if(BinsFailed>FpFailMax) {
-				DPRINTF("%sBinsFailed(%d) > FpFailMax(%d)",myName,BinsFailed,FpFailMax)
+				dprintf("%sBinsFailed(%d) > FpFailMax(%d)",myName,BinsFailed,FpFailMax);
 				break;													// at least one required stat failed
 			}
 
-			DPRINTF("%sBinsFailed(%d) <= FpFailMax(%d)",myName,BinsFailed,FpFailMax)
+			dprintf("%sBinsFailed(%d) <= FpFailMax(%d)",myName,BinsFailed,FpFailMax);
 
 			if(FarDist <= MaxDistance) {
 
-				if(_fseeki64(fp,arr.offset + FarFrame * __int64(FINGERELS * sizeof(arrbf[0])),SEEK_SET) ||  fread(arrbf,FINGERELS * sizeof(arrbf[0]),1,fp)!=1) {
+				if(fseeko(fp,arr.offset + FarFrame * int64_t(FINGERELS * sizeof(arrbf[0])),SEEK_SET) ||  fread(arrbf,FINGERELS * sizeof(arrbf[0]),1,fp)!=1) {
 					delete [] ibf;
 					delete [] hist;
 					fclose(fp);
@@ -1421,7 +1422,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 						if(Flags&(1<<0)) {
 							// "cc[n]i[delta]i[x]i[y]i[w]i[h]i[n2]i[delta2]i[x2]i[y2]i[Interlaced]b[matrix]i"
 							exitargs[2]=FarFrame;
-							double lc = max(min((1.0-RT_LumaCorrelation_Lo(AVSValue(exitargs,14),env))*255.0,255.0),0.0);
+							double lc = std::max(std::min((1.0-RT_LumaCorrelation_Lo(AVSValue(exitargs,14),env))*255.0,255.0),0.0);
 							if(lc < bm_LC || (XP == 2 && lc == bm_LC)) {
 								bm_LC = lc;
 								bm_LC_Frm=FarFrame;
@@ -1429,12 +1430,12 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 							}
 							if(lc <= LC) {
 								Result = FarFrame;
-								DPRINTF("%sLumaCorrelation Condition Succeeds @%d lc=%f",myName,Result,lc)
+								dprintf("%sLumaCorrelation Condition Succeeds @%d lc=%f",myName,Result,lc);
 								if(XP) {
 									int fnxt = Result;
 									while(abs(SearchStart-(fnxt+PrvNxtFlag)) <= MaxDistance) {
 										exitargs[2]=fnxt+PrvNxtFlag;
-										double lctmp = max(min((1.0-RT_LumaCorrelation_Lo(AVSValue(exitargs,14),env))*255.0,255.0),0.0);
+										double lctmp = std::max(std::min((1.0-RT_LumaCorrelation_Lo(AVSValue(exitargs,14),env))*255.0,255.0),0.0);
 										if(lctmp > lc || (XP==3 &&  lctmp == lc))
 											break;						// not as good OR not Strictly better than
 										if(XP == 1 && lctmp == lc) {	// looking for 'better than', check if better AFTER equal
@@ -1442,7 +1443,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 											int    fnxt_2  = fnxt;
 											while(abs(SearchStart-(fnxt_2+PrvNxtFlag)) <= MaxDistance) {
 												exitargs[2]=fnxt_2+PrvNxtFlag;
-												double lctmp_2 = max(min((1.0-RT_LumaCorrelation_Lo(AVSValue(exitargs,14),env))*255.0,255.0),0.0);
+												double lctmp_2 = std::max(std::min((1.0-RT_LumaCorrelation_Lo(AVSValue(exitargs,14),env))*255.0,255.0),0.0);
 												if(lctmp_2 != lc)
 													break;						// not equal, break
 												fnxt_2 += PrvNxtFlag;
@@ -1459,7 +1460,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 										fnxt += PrvNxtFlag;
 									}
 									if(fnxt != Result) {
-										DPRINTF("%sLumaCorrelation Condition Extended to %d lc=%f",myName,fnxt,lc)
+										dprintf("%sLumaCorrelation Condition Extended to %d lc=%f",myName,fnxt,lc);
 										exit_LC_XP = abs(Result - fnxt);
 										Result = fnxt;
 									}
@@ -1480,7 +1481,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 							}
 							if(ld <= LD) {
 								Result = FarFrame;
-								DPRINTF("%sLumaDifference Condition Succeeds @%d ld=%f",myName,Result,ld)
+								dprintf("%sLumaDifference Condition Succeeds @%d ld=%f",myName,Result,ld);
 								if(XP) {
 									int fnxt = Result;
 									while(abs(SearchStart-(fnxt+PrvNxtFlag)) <= MaxDistance) {
@@ -1510,7 +1511,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 										fnxt += PrvNxtFlag;
 									}
 									if(fnxt != Result) {
-										DPRINTF("%sLumaDifference Condition Extended to %d ld=%f",myName,fnxt,ld)
+										dprintf("%sLumaDifference Condition Extended to %d ld=%f",myName,fnxt,ld);
 										exit_LD_XP = abs(Result - fnxt);
 										Result = fnxt;
 									}
@@ -1531,7 +1532,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 							}
 							if(fd <= FD) {
 								Result = FarFrame;
-								DPRINTF("%sFrameDifference Condition Succeeds @%d fd=%f",myName,Result,fd)
+								dprintf("%sFrameDifference Condition Succeeds @%d fd=%f",myName,Result,fd);
 								if(XP) {
 									int fnxt = Result;
 									while(abs(SearchStart-(fnxt+PrvNxtFlag)) <= MaxDistance) {
@@ -1561,7 +1562,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 										fnxt += PrvNxtFlag;
 									}
 									if(fnxt != Result) {
-										DPRINTF("%sFrameDifference Condition Extended to %d fd=%f",myName,fnxt,fd)
+										dprintf("%sFrameDifference Condition Extended to %d fd=%f",myName,fnxt,fd);
 										exit_FD_XP = abs(Result - fnxt);
 										Result = fnxt;
 									}
@@ -1589,7 +1590,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 							}
 							if(Flags&(1<<3) && pd <= PD) {
 								Result = FarFrame;
-								DPRINTF("%sLumaPixelsDifferent Condition Succeeds @%d pd=%f",myName,Result,pd)
+								dprintf("%sLumaPixelsDifferent Condition Succeeds @%d pd=%f",myName,Result,pd);
 								if(XP) {
 									int fnxt = Result;
 									while(abs(SearchStart-(fnxt+PrvNxtFlag)) <= MaxDistance) {
@@ -1620,7 +1621,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 										fnxt += PrvNxtFlag;
 									}
 									if(fnxt != Result) {
-										DPRINTF("%sLumaPixelsDifferent Condition Extended to %d pd=%f",myName,fnxt,pd)
+										dprintf("%sLumaPixelsDifferent Condition Extended to %d pd=%f",myName,fnxt,pd);
 										exit_PD_XP = abs(Result - fnxt);
 										Result = fnxt;
 									}
@@ -1630,7 +1631,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 								exit_Flags |= (1<<3);
 							} else if (Flags&(1<<4) && pc <= PC) {
 								Result = FarFrame;
-								DPRINTF("%sLumaPixelsDifferentCount Condition Succeeds @%d pc=%d",myName,Result,pc)
+								dprintf("%sLumaPixelsDifferentCount Condition Succeeds @%d pc=%d",myName,Result,pc);
 								if(XP) {
 									int fnxt = Result;
 									while(abs(SearchStart-(fnxt+PrvNxtFlag)) <= MaxDistance) {
@@ -1660,7 +1661,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 										fnxt += PrvNxtFlag;
 									}
 									if(fnxt != Result) {
-										DPRINTF("%sLumaPixelsDifferentCount Condition Extended to %d pc=%d",myName,fnxt,pc)
+										dprintf("%sLumaPixelsDifferentCount Condition Extended to %d pc=%d",myName,fnxt,pc);
 										exit_PC_XP = abs(Result - fnxt);
 										Result = fnxt;
 									}
@@ -1682,7 +1683,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 							}
 							if(fm <= FM) {
 								Result = FarFrame;
-								DPRINTF("%sFrameMovement Condition Succeeds @%d fm=%f",myName,Result,fm)
+								dprintf("%sFrameMovement Condition Succeeds @%d fm=%f",myName,Result,fm);
 								if(XP) {
 									int fnxt = Result;
 									while(abs(SearchStart-(fnxt+PrvNxtFlag)) <= MaxDistance) {
@@ -1714,7 +1715,7 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 										fnxt += PrvNxtFlag;
 									}
 									if(fnxt != Result) {
-										DPRINTF("%sFrameMovement Condition Extended to %d fm=%f",myName,fnxt,fm)
+										dprintf("%sFrameMovement Condition Extended to %d fm=%f",myName,fnxt,fm);
 										exit_FM_XP = abs(Result - fnxt);
 										Result = fnxt;
 									}
@@ -1726,33 +1727,33 @@ AVSValue __cdecl RT_QwikScan(AVSValue args, void* user_data, IScriptEnvironment*
 						}
 
 						if(exit_Flags==0) {
-								DPRINTF("%sMatch @ %d, EXIT conditions FAIL",myName,FarFrame)
-								DPRINTF("%sNew Cursor %d",myName,FarFrame)
+								dprintf("%sMatch @ %d, EXIT conditions FAIL",myName,FarFrame);
+								dprintf("%sNew Cursor %d",myName,FarFrame);
 							Cursor=FarFrame;
 						} else {
 							Result = FarFrame;
-							DPRINTF("%sFULL Match, EXIT condition SUCCEEDS @ %d",myName,Result)
+							dprintf("%sFULL Match, EXIT condition SUCCEEDS @ %d",myName,Result);
 							break;
 						}
 					} else { // End of if(Flags & 0x3F)
 						Result = FarFrame;
-						DPRINTF("%sFarFrame=%d",myName,FarFrame)
-						DPRINTF("%sMatch (Without Exit Condition) Returning %d",myName,Result)
+						dprintf("%sFarFrame=%d",myName,FarFrame);
+						dprintf("%sMatch (Without Exit Condition) Returning %d",myName,Result);
 						break;
 					}
 				} else {
-DPRINTF("%sMatch failed",myName)
-DPRINTF("%sFarFrame=%d",myName,FarFrame)
-DPRINTF("%sNew Cursor %d",myName,FarFrame)
+dprintf("%sMatch failed",myName);
+dprintf("%sFarFrame=%d",myName,FarFrame);
+dprintf("%sNew Cursor %d",myName,FarFrame);
 					Cursor = FarFrame;
 				}
 			} else {
-DPRINTF("%sMaxDistance reached, exit NOT Found",myName)
+dprintf("%sMaxDistance reached, exit NOT Found",myName);
 				break;													// Neither frame nor next cursor valid
 			}
         } // End while(abs(SearchStart-Cursor) < MaxDistance)
 	} else if(Result < 0) {
-DPRINTF("%sMaxDistance Reached on first frame (Inclusive Failed)",myName)
+dprintf("%sMaxDistance Reached on first frame (Inclusive Failed)",myName);
 	}
 	delete [] ibf;
 	delete [] hist;

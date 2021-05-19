@@ -21,7 +21,7 @@ double __cdecl PVF_AverageLuma_YUY2(const PVideoFrame &src,const int xx,const in
     const int pitch    = src->GetPitch();
 	const int ystride  = pitch*ystep;
     const BYTE  *srcp  = src->GetReadPtr()  + (yy * pitch)	 + (xx *2);
-	__int64 acc		 = 0;
+	int64_t acc		 = 0;
     unsigned int sum = 0;
 	const int yhit = (altscan) ? (hh +1)>>1 : hh;
     const unsigned int Pixels = (ww * yhit);

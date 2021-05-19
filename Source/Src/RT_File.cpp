@@ -15,7 +15,7 @@
 */
 
 #include "RT_Stats.h"
-
+#include <limits.h>
 
 int MatchPat(const char *s,const char *p,int insig) {
 	/*
@@ -53,7 +53,7 @@ int MatchPat(const char *s,const char *p,int insig) {
 
 int MatchMultipat(const char *s,const char *p) {
 	// Match s with multiple wildcard patterns (* or ?) in p, pipe '|' separated.
-	char patbuf[MAX_PATH];
+	char patbuf[PATH_MAX];
 	while(*p) {
 		char *d = patbuf;
 		while(*p && *p!='|')
@@ -70,17 +70,19 @@ int MatchMultipat(const char *s,const char *p) {
 }
 
 AVSValue __cdecl RT_WriteFileList(AVSValue args, void* user_data, IScriptEnvironment* env) {
+	env->ThrowError("NOT IMPLEMENTED YET");
+	/*
 	const char *infilename	= args[0].AsString();
 	const char *ofn			= args[1].AsString();
 	const bool append		= args[2].AsBool(false);
 	char *omode=(append)?"a+t":"wt";
 	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind;
-	char Path[MAX_PATH];										// Path up to and incl last slash
-	char Name[MAX_PATH];										// Name up to and incl last '.'
-	char Extension[MAX_PATH];									// User supplied extension with pipe separated wildcards
-	char ifn[MAX_PATH];											// filename used in system call to FindFirstFile
-	char GotName[MAX_PATH];
+	char Path[PATH_MAX];										// Path up to and incl last slash
+	char Name[PATH_MAX];										// Name up to and incl last '.'
+	char Extension[PATH_MAX];									// User supplied extension with pipe separated wildcards
+	char ifn[PATH_MAX];											// filename used in system call to FindFirstFile
+	char GotName[PATH_MAX];
 	const char *s;
 	char *d,*Ext,c;
 
@@ -151,6 +153,8 @@ AVSValue __cdecl RT_WriteFileList(AVSValue args, void* user_data, IScriptEnviron
 	} while(FindNextFile(hFind, &FindFileData));
 	fclose(fp);
 	FindClose(hFind);
+	*/
+	int n=0;
 	return n;													// return filenames in output file
 }
 
@@ -357,7 +361,7 @@ AVSValue __cdecl RT_TxtWriteFile(AVSValue args, void* user_data, IScriptEnvironm
 	const char *s,*is		= args[0].AsString();
 	const char *ofn			= args[1].AsString();
 	const bool append		= args[2].AsBool(false);
-	char *omode=(append)?"a+t":"wt";
+	const char *omode=(append)?"a+t":"wt";
 	FILE * fp;
 	// we use write in text mode, let C insert '\r'.
 	if((fp=fopen(ofn, omode ))==NULL) {return -1;}					// Cannot output file
@@ -566,7 +570,7 @@ AVSValue __cdecl RT_WriteFile(AVSValue args, void* user_data, IScriptEnvironment
 		env->ThrowError("%sUnexpected data arg (%d)",myName,ix+1);
 	}
 
-	char *omode=(append)?"a+t":"wt";
+	const char *omode=(append)?"a+t":"wt";
 	FILE * fp;
 	// we use write in text mode, let C insert '\r'.
 	if((fp=fopen(ofn, omode ))==NULL) {						// Cannot output file

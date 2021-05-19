@@ -15,6 +15,7 @@
 */
 
 #include "RT_Stats.h"
+#include <algorithm>
 
 // --------------------------------------
 
@@ -84,15 +85,15 @@ AVSValue __cdecl RT_ArrayAlloc(AVSValue args, void* user_data, IScriptEnvironmen
 	FILE * fp=NULL;
 	size_t wr=0;
 
-	__int64 MaxFileSz = 0xFFFFF00000i64 ;												// 1TB - 1MB
+	int64_t MaxFileSz = 0xFFFFF000000LL ;												// 1TB - 1MB
 	int fatvol = QueryFatVolume(fn);
 	if(fatvol < 0)	env->ThrowError("%sCannot query Filesystem",myName);
 
-	__int64 dfs = QueryDiskFreeSpace(fn) - 0x100000;									// minus 1MB
+	int64_t dfs = QueryDiskFreeSpace(fn) - 0x100000;									// minus 1MB
 	if(dfs < 0)	env->ThrowError("%sCannot query DiskFreeSpace",myName);
 
-	__int64 maxfs = (fatvol==1)? 0xFFF00000i64 : MaxFileSz; 	// limit 4GB on FAT32
-	__int64 maxcurdfs=min(maxfs,dfs);							// Max current space, Limit to free space available to user.
+	int64_t maxfs = (fatvol==1)? 0xFFF000000LL : MaxFileSz; 	// limit 4GB on FAT32
+	int64_t maxcurdfs=std::min(maxfs,dfs);							// Max current space, Limit to free space available to user.
 
 	MYARR arr;
 	memset(&arr,0,sizeof(arr));
@@ -123,8 +124,8 @@ AVSValue __cdecl RT_ArrayAlloc(AVSValue args, void* user_data, IScriptEnvironmen
 			Arr_fn(fn),fn);
 	i=arr.dim[0] - 1;					// number of dimensions - 1 (mul[] only 0 -> 2)
 	arr.mul[0]=arr.mul[1]=arr.mul[2]=1;
-	__int64 m = arr.dim[i+1];			// Dimension of least sig valid index
-	__int64 Dim1Bytes=1;
+	int64_t m = arr.dim[i+1];			// Dimension of least sig valid index
+	int64_t Dim1Bytes=1;
 	for(;--i>=0;) {
 		Dim1Bytes=m;
 		arr.mul[i] =int(m);				// more sig index mul product of lesser sig dimensions
@@ -132,10 +133,10 @@ AVSValue __cdecl RT_ArrayAlloc(AVSValue args, void* user_data, IScriptEnvironmen
 	}
 	Dim1Bytes*=elsz;
 
-	int maxPossDim1= int(min((MaxFileSz - ARRAY_OFFSET) / Dim1Bytes,0x7FFFFFFEI64));	// max possible dim1 on any filesystem
-	int maxfsDim1  = int(min((maxfs  - ARRAY_OFFSET)	/ Dim1Bytes,0x7FFFFFFEI64));	// max current filesystem
-	int maxdfsDim1 = int(min((maxcurdfs - ARRAY_OFFSET) / Dim1Bytes,0x7FFFFFFEI64));	// max free space
-	int maxDim1 = min(maxfsDim1,maxdfsDim1);
+	int maxPossDim1= int(std::min<long long int>((MaxFileSz - ARRAY_OFFSET) / Dim1Bytes,0x7FFFFFFE0LL));	// max possible dim1 on any filesystem
+	int maxfsDim1  = int(std::min<long long int>((maxfs  - ARRAY_OFFSET)	/ Dim1Bytes,0x7FFFFFFE0LL));	// max current filesystem
+	int maxdfsDim1 = int(std::min<long long int>((maxcurdfs - ARRAY_OFFSET) / Dim1Bytes,0x7FFFFFFE0LL));	// max free space
+	int maxDim1 = std::min(maxfsDim1,maxdfsDim1);
 
 /*
 	dprintf("dim[0]=%d",arr.dim[0]);
@@ -146,14 +147,14 @@ AVSValue __cdecl RT_ArrayAlloc(AVSValue args, void* user_data, IScriptEnvironmen
 	dprintf("mul[0]=%d",arr.mul[0]);
 	dprintf("mul[1]=%d",arr.mul[1]);
 	dprintf("mul[2]=%d",arr.mul[2]);
-	dprintf("Dim1Bytes=%I64d",Dim1Bytes);
+	dprintf("Dim1Bytes=%0LLd",Dim1Bytes);
 	dprintf("maxPossDim1=%d ($%X)",maxPossDim1,maxPossDim1);
 	dprintf("maxfsDim1  =%d ($%X)",maxfsDim1,maxfsDim1);
 	dprintf("maxdfsDim1 =%d ($%X)",maxdfsDim1,maxdfsDim1);
 	dprintf("maxDim1    =%d ($%X)",maxDim1,maxDim1);
 */
 
-	if(Dim1Bytes > __int64(256*1024*1024)) {
+	if(Dim1Bytes > int64_t(256*1024*1024)) {
 		if(arr.dim[0]==2)	strcpy(ebf,"Dim2 * elsz too big, exceeds 256MB");
 		else				strcpy(ebf,"Dim2 * Dim3 * elsz too big, exceeds 256MB");
 	} else if(arr.dim[1] > maxPossDim1)	sprintf(ebf,"Dim1(%d) Exceeds Dim1max(%d)",arr.dim[1],maxPossDim1);
@@ -172,7 +173,7 @@ AVSValue __cdecl RT_ArrayAlloc(AVSValue args, void* user_data, IScriptEnvironmen
 		arr.attribs		= ARRAY_ATTRIB;
 		arr.ustrings	= ARRAY_USERSTRINGS;
 		arr.ustrlen		= ARRAY_USERSTRLEN;
-		int bfsz = int(min(1024*4,(ARRAY_OFFSET + arr.dim[1]*Dim1Bytes)));
+		int bfsz = int(std::min<long long int>(1024*4,(ARRAY_OFFSET + arr.dim[1]*Dim1Bytes)));
 		BYTE *bf = new BYTE[bfsz];
 		if(bf == NULL) {
 			strcpy(ebf,"Allocating memory buffer");
@@ -239,9 +240,9 @@ AVSValue __cdecl RT_ArrayGetDim1Max(AVSValue args, void* user_data, IScriptEnvir
 	fclose(fp);
 	int dim1max = arr.dim1max;
 	if(current) {
-		__int64 dfs = QueryMaxFileSize(fn);
+		int64_t dfs = QueryMaxFileSize(fn);
 		if(dfs < 0)	env->ThrowError("%sCannot query MaxFileSize",myName);
-		dim1max=int(min(((dfs / arr.dim1Bytes) + arr.dim[1]),0x7FFFFFFEI64));
+		dim1max=int(std::min<long long int>(((dfs / arr.dim1Bytes) + arr.dim[1]),0x7FFFFFFE0LL));
 	}
 	return  dim1max;
 }
@@ -337,7 +338,7 @@ AVSValue __cdecl RT_ArraySetAttrib(AVSValue args, void* user_data, IScriptEnviro
 
 AVSValue ArrayGetID_Lo(MYARR *arr,int idix) {
 	AVSValue ret;
-	idix = min(max(0,idix),127);
+	idix = std::min(std::max(0,idix),127);
 	int idoff   = idix / 32;
 	int idbitix = idix & 0x1F;
 	unsigned int idflgs = arr->idtype[idoff];
@@ -364,7 +365,7 @@ AVSValue __cdecl RT_ArrayGetID(AVSValue args, void* user_data, IScriptEnvironmen
 
 void ArraySetID_Lo(MYARR *arr,int idix,AVSValue avs) {
 	bool isI = avs.IsInt();
-	idix = min(max(0,idix),127);
+	idix = std::min(std::max(0,idix),127);
 	int idoff   = idix / 32;
 	int idbitix = idix & 0x1F;
 	unsigned int idflgs = arr->idtype[idoff];
@@ -543,7 +544,7 @@ AVSValue __cdecl RT_ArrayGet(AVSValue args, void* user_data, IScriptEnvironment*
 	const int dim=arr.dim[0];
 	int i,darg[3],ix,err,got;
 	int rd=0;
-	__int64 nel    = 0I64;
+	int64_t nel    = 00LL;
 	for(got=err=i=0;i<3;++i) {
 		if(!args[i+1].Defined()) {
 			ix = -1;
@@ -558,12 +559,12 @@ AVSValue __cdecl RT_ArrayGet(AVSValue args, void* user_data, IScriptEnvironment*
 				if(ix<0 || ix >= arr.dim[got])
 					err |= 0x04;				// subscript out of bounds
 				else
-					nel += __int64(ix) * arr.mul[i];
+					nel += int64_t(ix) * arr.mul[i];
 			}
 		}
 		darg[i]=ix;
 	}
-	__int64 nelLim = __int64(arr.dim[1]) * arr.mul[0];
+	int64_t nelLim = int64_t(arr.dim[1]) * arr.mul[0];
 	if(nel < 0 || nel >= nelLim)						err |= 0x08;
 	else if(type<ARRAY_BOOL || type > ARRAY_DOUBLE)		err |= 0x10;
 	if(err) {
@@ -573,16 +574,16 @@ AVSValue __cdecl RT_ArrayGet(AVSValue args, void* user_data, IScriptEnvironment*
 		if(err & 0x01)			sprintf(ebf,"ARR(%s) : Too many subscripts, got %d expecting %d",sbf,got,dim);
 		else if(err & 0x02)		sprintf(ebf,"ARR(%s) : Missing subscript, got %d expecting %d",sbf,got,dim);
 		else if(err & 0x04)		sprintf(ebf,"ARR(%s) : Subscript out of bounds MAX(%s)",sbf,mbf);
-		else if(err & 0x08)		sprintf(ebf,"ARR(%s) : Internal Error, Element does not exist(%I64d)",sbf,nel);
+		else if(err & 0x08)		sprintf(ebf,"ARR(%s) : Internal Error, Element does not exist(%0LLd)",sbf,nel);
 		else					sprintf(ebf,"Internal Error, Illegal Array type=%d",type);
 	} else {
 		char bf[1024+1],*bfp=bf;
 		if(elsz >= sizeof(bf) && ((bfp=new char[elsz+1])==NULL))			// nul term needed for string
 			strcpy(ebf,"Cannot Allocate temp read buffer");
-		else if(_fseeki64(fp,arr.offset + nel * elsz,SEEK_SET))
-			sprintf(ebf,"Cannot seek to Element ARR(%s) : NEL(%I64d)",Arr_IxStr(sbf,dim,darg[0],darg[1],darg[2]),nel);
+		else if(fseeko(fp,arr.offset + nel * elsz,SEEK_SET))
+			sprintf(ebf,"Cannot seek to Element ARR(%s) : NEL(%0LLd)",Arr_IxStr(sbf,dim,darg[0],darg[1],darg[2]),nel);
 		else if(fread(bfp,elsz,1,fp)!=1)
-			sprintf(ebf,"Cannot read Element ARR(%s) : NEL(%I64d)",Arr_IxStr(sbf,dim,darg[0],darg[1],darg[2]),nel);
+			sprintf(ebf,"Cannot read Element ARR(%s) : NEL(%0LLd)",Arr_IxStr(sbf,dim,darg[0],darg[1],darg[2]),nel);
 		else {
 			switch(type) {
 			case ARRAY_BOOL:	{char  * p = (char*)  bfp;	var = (*p !=0);}	break;
@@ -608,7 +609,7 @@ AVSValue __cdecl RT_ArraySet(AVSValue args, void* user_data, IScriptEnvironment*
 	const char *fn		= args[0].AsString();
 	char ebf[256]="";
 	size_t wr=0;
-	__int64 nel    = 0I64;
+	int64_t nel    = 00LL;
 	MYARR arr;
 	FILE   * fp=ARR_Read_Header(myName,fn,"rb+",arr,env);
 	const int dim=arr.dim[0];
@@ -629,7 +630,7 @@ AVSValue __cdecl RT_ArraySet(AVSValue args, void* user_data, IScriptEnvironment*
 				if(ix < 0 || ix >= arr.dim[got])
 					err |= 0x04;				// subscript out of bounds
 				else
-					nel += __int64(ix) * arr.mul[i];
+					nel += int64_t(ix) * arr.mul[i];
 			}
 		}
 		darg[i]=ix;
@@ -638,12 +639,12 @@ AVSValue __cdecl RT_ArraySet(AVSValue args, void* user_data, IScriptEnvironment*
 	AVSValue at=args[1];
 	const int atyp = (at.IsInt()) ? 1 : (at.IsFloat()) ? 2 : (at.IsBool()) ? 0 : (at.IsString()) ? 3 : -1;
 
-	__int64 nelLim = __int64(arr.dim[1]) * arr.mul[0];
+	int64_t nelLim = int64_t(arr.dim[1]) * arr.mul[0];
 	if(nel < 0 || nel >= nelLim)																err |= 0x08;
 	else if(type<ARRAY_BOOL || type > ARRAY_DOUBLE)												err |= 0x10;
 	else if(atyp < 0)																			err |= 0x20;
 	else if(atyp!=type && !((type==ARRAY_BIN && atyp==1) || (type==ARRAY_DOUBLE && atyp==2)))	err |= 0x40;
-	else if(err==0 && _fseeki64(fp,arr.offset+ nel*elsz,SEEK_SET))								err |= 0x80;
+	else if(err==0 && fseeko(fp,arr.offset+ nel*elsz,SEEK_SET))								err |= 0x80;
 	if(err) {
 		char sbf[256]="",mbf[64]="";
 		Arr_IxStr(sbf,got,darg[0],darg[1],darg[2]);
@@ -652,11 +653,11 @@ AVSValue __cdecl RT_ArraySet(AVSValue args, void* user_data, IScriptEnvironment*
 		if		(err & 0x01)	sprintf(ebf,"ARR(%s) : Too many subscripts, got %d expecting %d",sbf,got,dim);
 		else if	(err & 0x02)	sprintf(ebf,"ARR(%s) : Missing subscript, got %d expecting %d",sbf,got,dim);
 		else if	(err & 0x04)	sprintf(ebf,"ARR(%s) : Subscript out of bounds MAX(%s)",sbf,mbf);
-		else if	(err & 0x08)	sprintf(ebf,"ARR(%s) : Internal Error, Element does not exist(%I64d)",sbf,nel);
+		else if	(err & 0x08)	sprintf(ebf,"ARR(%s) : Internal Error, Element does not exist(%0LLd)",sbf,nel);
 		else if	(err & 0x10)	sprintf(ebf,"ARR(%s) : Internal Error, Illegal Array Element type=%d",sbf,type);
 		else if	(err & 0x20)	sprintf(ebf,"ARR(%s) : Unknown Data arg Type, expecting Type=%d",sbf,type);
 		else if	(err & 0x40)	sprintf(ebf,"ARR(%s) : Incorrect Data Type=%s, expecting %s",sbf,ts[atyp],ts[type]);
-		else 					sprintf(ebf,"ARR(%s) : NEL(%I64d) Cannot seek to Element",sbf,nel);
+		else 					sprintf(ebf,"ARR(%s) : NEL(%0LLd) Cannot seek to Element",sbf,nel);
 	} else {
 		if(type==ARRAY_STRING) {
 			char bf[1024],*bfp=bf;
@@ -705,17 +706,17 @@ AVSValue __cdecl RT_ArrayExtend(AVSValue args, void* user_data, IScriptEnvironme
 	size_t wr = 0;
 	if(add == 0) wr=1;
 	else {
-		__int64 dfs = QueryMaxFileSize(fn);
+		int64_t dfs = QueryMaxFileSize(fn);
 		if(dfs < 0)						sprintf(ebf,"%sCannot query MaxFileSize",myName);
 		else {
-			int lim = int(min(((dfs / arr.dim1Bytes) + arr.dim[1]),0x7FFFFFFEI64));
+			int lim = int(std::min<long long int>(((dfs / arr.dim1Bytes) + arr.dim[1]),0x7FFFFFFE0LL));
 			const int extmaxsz = lim - arr.dim[1];			// how many we can grow by
 			if(add > extmaxsz)
 				sprintf(ebf,"Add %d, Overflows available space(%d extend available)",add,extmaxsz);
 			else {
 				char bf[1024],*bfp=bf;
-				__int64 clrbytes = __int64(add) * arr.dim1Bytes;
-				int bfsz = (clrbytes>(1024*1024I64)) ? 1024*1024 : int(clrbytes);
+				int64_t clrbytes = int64_t(add) * arr.dim1Bytes;
+				int bfsz = (clrbytes>(1024*10240LL)) ? 1024*1024 : int(clrbytes);
 				if(bfsz > sizeof(bf)) {
 					bfp = new char[bfsz];
 					if(bfp==NULL) {
@@ -726,7 +727,7 @@ AVSValue __cdecl RT_ArrayExtend(AVSValue args, void* user_data, IScriptEnvironme
 				const int sods = int(clrbytes  /  bfsz);
 				const int odds = int(clrbytes  %  bfsz);
 				memset(bfp,0,bfsz);
-				if(_fseeki64(fp,arr.offset+__int64(arr.dim[1])*arr.dim1Bytes,SEEK_SET))		strcpy(ebf,"Cannot seek to END");
+				if(fseeko(fp,arr.offset+int64_t(arr.dim[1])*arr.dim1Bytes,SEEK_SET))		strcpy(ebf,"Cannot seek to END");
 				else {
 					int i;
 					for(wr=1,i = sods; wr == 1 && --i >= 0; )
@@ -767,14 +768,14 @@ AVSValue __cdecl RT_ArrayAppend(AVSValue args, void* user_data, IScriptEnvironme
 	const int elsz=arr.elsz;
 	const int atyp = (at.IsInt()) ? 1 : (at.IsFloat()) ? 2 : (at.IsBool()) ? 0 : (at.IsString()) ? 3 : -1;
 	size_t wr=0;
-	__int64 dfs = QueryMaxFileSize(fn);
+	int64_t dfs = QueryMaxFileSize(fn);
 	if(dfs < 0)												sprintf(ebf,"%sCannot query MaxFileSize",myName);
 	else {
-		int dim1max=int(min(((dfs / arr.dim1Bytes) + arr.dim[1]),0x7FFFFFFEI64));
+		int dim1max=int(std::min<long long int>(((dfs / arr.dim1Bytes) + arr.dim[1]),0x7FFFFFFE0LL));
 		if(type<ARRAY_BOOL || type > ARRAY_DOUBLE)			sprintf(ebf,"Internal Error, Illegal Array type=%d",type);
 		else if(atyp < 0)									sprintf(ebf,"Unknown data arg Type, expecting Type=%s",ts[type]);
 		else if(arr.dim[1] >= dim1max)						sprintf(ebf,"Reached Array Limit %d",dim1max);
-		else if(_fseeki64(fp,arr.offset+__int64(arr.dim[1])*arr.dim1Bytes,SEEK_SET))
+		else if(fseeko(fp,arr.offset+int64_t(arr.dim[1])*arr.dim1Bytes,SEEK_SET))
 			strcpy(ebf,"Cannot seek to END");
 		else if(atyp!=type && !((type==ARRAY_BIN&&atyp==1) || (type==ARRAY_DOUBLE&&atyp==2)))
 			sprintf(ebf,"Incorrect Type=%s, expecting %s",ts[atyp],ts[type]);

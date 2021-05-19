@@ -28,15 +28,13 @@
 #ifndef __DDIGIT_H__
 #define __DDIGIT_H__
 
-#include <Windows.h>
-
 //#include "Avisynth.h"
 
 #ifndef __AVISYNTH_H__
 	#ifdef AVISYNTH_PLUGIN_25
-		#include "Avisynth25.h"
+		#include "avisynth25.h"
 	#else
-		#include "Avisynth.h"
+		#include <avisynth/avisynth.h>
 	#endif
 #endif
 

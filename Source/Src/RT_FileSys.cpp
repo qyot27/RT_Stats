@@ -18,29 +18,36 @@
 
 int __cdecl QueryFatVolume(const char *relname) {
 	// Return:- 1=FAT. 0 = Not FAT. -1 on error;
+
+	/*
 	int ret = -1;
-	char FullPath[_MAX_PATH];
-	if(_fullpath(FullPath, relname, _MAX_PATH ) != NULL ) {
-		TCHAR RootPathName[_MAX_PATH];
+	char FullPath[PATH_MAX];
+	if(_fullpath(FullPath, relname, _PATH_MAX ) != NULL ) {
+		TCHAR RootPathName[_PATH_MAX];
 		_splitpath(FullPath,RootPathName, NULL,NULL,NULL );
 		char *p=RootPathName;
 		while(*p++);
 		--p;
 		if(p>RootPathName && p[-1] != '\\') {*p++='\\';*p='\0';}
-		TCHAR FileSystemNameBuffer[MAX_PATH+1];
-		BOOL result = GetVolumeInformation(RootPathName,NULL,0,NULL,NULL,NULL,FileSystemNameBuffer,MAX_PATH+1);
+		TCHAR FileSystemNameBuffer[PATH_MAX+1];
+		BOOL result = GetVolumeInformation(RootPathName,NULL,0,NULL,NULL,NULL,FileSystemNameBuffer,PATH_MAX+1);
 		if(result) {
 			ret = (_strnicmp(FileSystemNameBuffer,"FAT",3)==0) ?1:0;		// Just the 1st 3 characters (FAT/FAT32)
 		}
 	}
-	return ret;
+	*/
+
+	//return ret;
+	return 0;
 }
 
-__int64 __cdecl QueryDiskFreeSpace(const char *relname) {
-	__int64 ret = -1;
-	char FullPath[_MAX_PATH];
-	if(_fullpath(FullPath, relname, _MAX_PATH ) != NULL ) {
-		TCHAR RootPathName[_MAX_PATH];
+int64_t __cdecl QueryDiskFreeSpace(const char *relname) {
+	// int64_t ret = -1;
+	int64_t ret = 0xFFF000000LL;
+	/*
+	char FullPath[MAX_PATH];
+	if(_fullpath(FullPath, relname, _PATH_MAX ) != NULL ) {
+		TCHAR RootPathName[_PATH_MAX];
 		_splitpath(FullPath,RootPathName, NULL,NULL,NULL );
 		char *p=RootPathName;
 		while(*p++);
@@ -51,17 +58,21 @@ __int64 __cdecl QueryDiskFreeSpace(const char *relname) {
 		ULARGE_INTEGER TotalNumberOfFreeBytes;
 		BOOL result=GetDiskFreeSpaceEx(RootPathName,&FreeBytesAvailableToCaller,&TotalNumberOfBytes,&TotalNumberOfFreeBytes);
 		if(result) {
-			ret = __int64(FreeBytesAvailableToCaller.QuadPart);
+			ret = int64_t(FreeBytesAvailableToCaller.QuadPart);
 		}
 	}
+	*/
 	return ret;
 }
 
-__int64 __cdecl QueryMaxFileSize(const char *relname) {
-	__int64 ret = -1;
-	char FullPath[_MAX_PATH];
-	if(_fullpath(FullPath, relname, _MAX_PATH ) != NULL ) {
-		TCHAR RootPathName[_MAX_PATH];
+int64_t __cdecl QueryMaxFileSize(const char *relname) {
+	// int64_t ret = -1;
+	int64_t ret = 0xFFF000000LL;
+
+	/*
+	char FullPath[_PATH_MAX];
+	if(_fullpath(FullPath, relname, _PATH_MAX ) != NULL ) {
+		TCHAR RootPathName[_PATH_MAX];
 		_splitpath(FullPath,RootPathName, NULL,NULL,NULL );
 		char *p=RootPathName;
 		while(*p++);
@@ -71,17 +82,18 @@ __int64 __cdecl QueryMaxFileSize(const char *relname) {
 		ULARGE_INTEGER TotalNumberOfBytes;
 		ULARGE_INTEGER TotalNumberOfFreeBytes;
 		if(GetDiskFreeSpaceEx(RootPathName,&FreeBytesAvailableToCaller,&TotalNumberOfBytes,&TotalNumberOfFreeBytes)) {
-			__int64 dfs = __int64(FreeBytesAvailableToCaller.QuadPart) - 0x100000I64;	// minus 1MB
+			int64_t dfs = int64_t(FreeBytesAvailableToCaller.QuadPart) - 0x1000000LL;	// minus 1MB
 			if(dfs > 0) {
-				TCHAR FileSystemNameBuffer[MAX_PATH+1];
-				if(GetVolumeInformation(RootPathName,NULL,0,NULL,NULL,NULL,FileSystemNameBuffer,MAX_PATH+1)) {
+				TCHAR FileSystemNameBuffer[PATH_MAX+1];
+				if(GetVolumeInformation(RootPathName,NULL,0,NULL,NULL,NULL,FileSystemNameBuffer,PATH_MAX+1)) {
 					if(_strnicmp(FileSystemNameBuffer,"FAT",3)==0) {	// Just the 1st 3 characters (FAT/FAT32)
-						if(dfs>0xFFF00000i64) dfs = 0xFFF00000i64; 		// limit 4GB-1MB on FAT32
+						if(dfs>0xFFF000000LL) dfs = 0xFFF000000LL; 		// limit 4GB-1MB on FAT32
 					}
 					ret = dfs;
 				}
 			}
 		}
 	}
+	*/
 	return ret;
 }

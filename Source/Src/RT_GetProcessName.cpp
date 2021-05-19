@@ -21,7 +21,7 @@
 
 
 AVSValue __cdecl RT_GetProcessName(AVSValue args, void*, IScriptEnvironment* env) {
-
+/*
 	bool parent= args[0].AsBool(false);
 	bool debug = args[1].AsBool(false);
 
@@ -31,7 +31,7 @@ AVSValue __cdecl RT_GetProcessName(AVSValue args, void*, IScriptEnvironment* env
 //	Minimum supported client:- Windows XP WinBase.h (Processthreadsapi.h W8 Server 2012)
 //  ssS, Rubbish, also works fine on W2K
 
-	DWORD PID = GetCurrentProcessId();	// Cannot fail (I think) as current process is obviously running.
+	unsigned int PID = getpid();	// Cannot fail (I think) as current process is obviously running.
 
 
 
@@ -61,7 +61,7 @@ AVSValue __cdecl RT_GetProcessName(AVSValue args, void*, IScriptEnvironment* env
 // #define TH32CS_SNAPALL      (TH32CS_SNAPHEAPLIST | TH32CS_SNAPPROCESS | TH32CS_SNAPTHREAD | TH32CS_SNAPMODULE)
 // #define TH32CS_INHERIT      0x80000000
 //
-    HANDLE         hProcessSnap = NULL;
+    u_int         hProcessSnap = NULL;
 
     //  Take a snapshot of all processes in the system.
     hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -89,7 +89,7 @@ AVSValue __cdecl RT_GetProcessName(AVSValue args, void*, IScriptEnvironment* env
 //   DWORD th32ParentProcessID;
 //   LONG  pcPriClassBase;
 //   DWORD dwFlags;
-//   TCHAR szExeFile[MAX_PATH];
+//   TCHAR szExeFile[PATH_MAX];
 // } PROCESSENTRY32;
 // typedef PROCESSENTRY32 *PPROCESSENTRY32;
 //
@@ -170,6 +170,10 @@ AVSValue __cdecl RT_GetProcessName(AVSValue args, void*, IScriptEnvironment* env
     } while (Process32Next(hProcessSnap, &pe32));
 
     CloseHandle (hProcessSnap);		// Cleanup process snapshot
+	*/
 
+	AVSValue ret =  -3;
+	extern char *program_invocation_name;
+	ret = env->SaveString(program_invocation_name);
     return (ret);
 }

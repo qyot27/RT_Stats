@@ -60,7 +60,7 @@ int __cdecl RT_ChanAve_Lo(const AVSValue &clip,const AVSValue &frame,double ret[
 				const BYTE  *srcp = src->GetReadPtr(pln);
 				int x,y;
 				unsigned int sum = 0;
-				__int64	 acc = 0;
+				int64_t	 acc = 0;
 				for(y=src->GetHeight(pln);--y>=0;) {
 					for(x=rowsizeUV;--x>=0;) {
 						sum += srcp[x];
@@ -88,7 +88,7 @@ int __cdecl RT_ChanAve_Lo(const AVSValue &clip,const AVSValue &frame,double ret[
 		const BYTE  *srcp = src->GetReadPtr();
 		int x,y;
 		unsigned int sumU = 0,sumV=0;
-		__int64	 accU = 0, accV=0;
+		int64_t	 accU = 0, accV=0;
 		for(y=src->GetHeight();--y>=0;) {
 			for(x=rowsize;(x-=4)>=0;) {
 				sumU += srcp[x+1];
@@ -153,7 +153,7 @@ AVSValue __cdecl RT_ChanAve(AVSValue args, void* user_data, IScriptEnvironment* 
 
 
 double __cdecl RT_FrameDifference_Lo(const AVSValue &args,const char*name,IScriptEnvironment* env) {
-	char * myName=(name==NULL)?"RT_FrameDifference: ":name;
+	const char * myName=(name==NULL)?"RT_FrameDifference: ":name;
 	PClip child,child2;
 	int n,n2;
 	bool	gotcur=false;

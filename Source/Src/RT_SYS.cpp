@@ -17,13 +17,14 @@
 #define _CRT_RAND_S		// for rand_s, and requires stdlib.h (before includes)
 
 #include "RT_Stats.h"
-
+#include <limits.h>
+#include <algorithm>
 
 int __cdecl RandInt_Lo(int randmax) {
 	bool sig = (randmax<0);
 	randmax  = abs(randmax);
 	unsigned int number;
-	rand_s(&number);
+	number = rand();
 	int i = int(((double)number / ((double) UINT_MAX + 1)) * (double)randmax);
 	if(sig)	i = -i;
 	return i;
@@ -37,38 +38,39 @@ AVSValue __cdecl RT_RandInt(AVSValue args, void* user_data, IScriptEnvironment* 
 }
 
 AVSValue __cdecl RT_Sleep(AVSValue args, void* user_data, IScriptEnvironment* env) {
-	double tim = max(min(args[0].AsFloat(),60.0),0.0) * 1000.0;
-	DWORD t = DWORD(tim);
-    Sleep(t);
+	double tim = std::max(std::min(args[0].AsFloat(),60.0),0.0) * 1000.0;
+	unsigned int t = tim;
+    sleep(t);
     return 0;
 }
 
 AVSValue __cdecl RT_GetPid(AVSValue args, void* user_data, IScriptEnvironment* env) {
-	return _getpid();
+	return getpid();
 }
 
 AVSValue __cdecl RT_FileDuplicate(AVSValue args, void* user_data, IScriptEnvironment* env) {
+	/*
 	const char * myName     = "RT_FileDuplicate: ";
 	char ebf[256]="";
 	FILE * fp1=NULL;
 	FILE * fp2=NULL;
 	char *bf=NULL;
-	__int64 flen=0;
+	int64_t flen=0;
 	int bfsz=8*1024;
-	char full1[_MAX_PATH],full2[_MAX_PATH];
+	char full1[PATH_MAX],full2[PATH_MAX];
 	const char*fn1	= args[0].AsString();
 	const char*fn2	= args[1].AsString();
 	const bool ovwr	= args[2].AsBool(false);
 	if(*fn1=='\0')															strcpy(ebf,"Empty source filename1");
 	else if(*fn2=='\0')														strcpy(ebf,"Empty dest filename2");
-	else if(_fullpath(full1,fn1,sizeof(full1))== NULL)						strcpy(ebf,"Cannot get fullpath filename1");
-	else if(_fullpath(full2,fn2,sizeof(full2))== NULL)						strcpy(ebf,"Cannot get fullpath filename2");
-	else if(_strcmpi(full1,full2)==0)										strcpy(ebf,"filename1 == filename2");
+	else if(realpath(fn1,full1))											strcpy(ebf,"Cannot get fullpath filename1");
+	else if(realpath(fn2,full2))											strcpy(ebf,"Cannot get fullpath filename2");
+	else if(strcasecmp(full1,full2)==0)										strcpy(ebf,"filename1 == filename2");
 	else if(!ovwr && GetFileAttributes(full2)!=INVALID_FILE_ATTRIBUTES)		strcpy(ebf,"Filename2 already exists");
 	else if((fp1=fopen(full1,"rb"))==NULL)									strcpy(ebf,"Cannot open source file");
 	else if((fp2=fopen(full2,"wb"))==NULL)									strcpy(ebf,"Cannot open dest file");
-	else if((_fseeki64(fp1,0,SEEK_END)!=0)||((flen=_ftelli64(fp1))==-1L))	strcpy(ebf,"Cannot seek in source file");
-	else if((bfsz=int(min(flen,bfsz)))==0)									strcpy(ebf,"Zero len source file");
+	else if((fseeko(fp1,0,SEEK_END)!=0)||((flen=_ftell0LL(fp1))==-1L))	strcpy(ebf,"Cannot seek in source file");
+	else if((bfsz=intstd::minflen,bfsz)))==0)									strcpy(ebf,"Zero len source file");
 	else if((bf=new char[bfsz])==NULL)										strcpy(ebf,"Cannot allocate buffer");
 	else {
 		rewind(fp1);
@@ -87,6 +89,7 @@ AVSValue __cdecl RT_FileDuplicate(AVSValue args, void* user_data, IScriptEnviron
 	if(fp2!= NULL)	fclose(fp2);
 	if(fp1!= NULL)	fclose(fp1);
 	if(ebf[0]!=0)	env->ThrowError("%sError, %s",myName,ebf);
+	*/
 	return 0;
 }
 
@@ -100,7 +103,7 @@ AVSValue __cdecl RT_ForceProcess(AVSValue args, void* user_data, IScriptEnvironm
 	const bool video = (args[1].AsBool(true)  && vi.HasVideo() && frames > 0);
 	const bool audio = (args[2].AsBool(false) && vi.HasAudio() && vi.num_audio_samples > 0);
 	const bool debug=args[3].AsBool(true);
-	const __int64 nsamples = (!audio) ? 0 : (video) ? vi.AudioSamplesFromFrames(1) :  vi.audio_samples_per_second;
+	const int64_t nsamples = (!audio) ? 0 : (video) ? vi.AudioSamplesFromFrames(1) :  vi.audio_samples_per_second;
 	BYTE *bf = NULL;
 	if(audio) {
 		int bfsz = int(vi.BytesFromAudioSamples(nsamples));
@@ -110,21 +113,21 @@ AVSValue __cdecl RT_ForceProcess(AVSValue args, void* user_data, IScriptEnvironm
 	if(video) {
 		double start_T =  double(clock()) / double(CLOCKS_PER_SEC);
 		double sT = start_T;
-		int parts = min(20,frames);
+		int parts = std::min(20,frames);
 		int part=1;
 		int sf=0;                       // this time start frameno
 		int stopf = frames * part / parts;
 		if(debug)	dprintf("%sCommencing Forced process",myName);
 		for(int n=0;n<frames;++n) {
 			if(bf!=NULL) {
-				__int64 s = vi.AudioSamplesFromFrames(n);
-				__int64 e = vi.AudioSamplesFromFrames(n+1);
+				int64_t s = vi.AudioSamplesFromFrames(n);
+				int64_t e = vi.AudioSamplesFromFrames(n+1);
 				child->GetAudio((void*)bf, s, e-s, env);	// Force 1 video frame worth of audio
 			}
 			PVideoFrame	src = child->GetFrame(n,env);		// Force decoding. MUST assign to PVideoFrame
 	        if(debug && n+1 >= stopf) {
 				double now = double(clock()) / double(CLOCKS_PER_SEC);
-				double Tim   = max(now - sT,0.0001); // time taken for this part
+				double Tim   = std::max(now - sT,0.0001); // time taken for this part
 				double FPS = (n+1-sf)/Tim;
 				double SPF = 1.0/FPS;
 				dprintf("%s%6d] %6.2f%%  nFrms=%d  T=%.3fsec  :  %.2fFpS  %.6fSpF",
@@ -135,17 +138,17 @@ AVSValue __cdecl RT_ForceProcess(AVSValue args, void* user_data, IScriptEnvironm
 				stopf = frames * part / parts; // next time stop frame
 		    }
 			if((n & 0x7F)==0) {
-				Sleep(0);
+				sleep(0);
 			}
 		}
 		if(debug) {
-			double Tim = max(double(clock()) / double(CLOCKS_PER_SEC) - start_T,0.0001);
+			double Tim = std::max(double(clock()) / double(CLOCKS_PER_SEC) - start_T,0.0001);
 			double FPS = frames/Tim;
 			double SPF = 1.0/FPS;
 			dprintf("%sTime=%.3fsecs (%.3fmins) : Avg %.3fFpS %.6fSpF",myName,Tim,Tim/60.0,FPS,SPF);
 		}
 	} else if(bf!=NULL) {
-		__int64 s,e;
+		int64_t s,e;
 		for(s=0; s < vi.num_audio_samples; s+= nsamples) {
 			e = s + nsamples;
 			if(e > vi.num_audio_samples)

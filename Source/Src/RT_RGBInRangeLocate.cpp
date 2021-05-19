@@ -15,6 +15,7 @@
 */
 
 #include "RT_Stats.h"
+#include <algorithm>
 
 double __cdecl RT_RgbInRange_Lo(const AVSValue &std,const AVSValue &rgbminmax,IScriptEnvironment* env) {
 
@@ -70,7 +71,7 @@ double __cdecl RT_RgbInRange_Lo(const AVSValue &std,const AVSValue &rgbminmax,IS
 	const int ystep			= (laced) ? 2:1;
 	const int ystride		= pitch*ystep;
 
-	__int64 acc				= 0;
+	int64_t acc				= 0;
     unsigned long sum       = 0;
     int x, y;
 
@@ -180,22 +181,22 @@ AVSValue __cdecl RT_RGBInRangeLocate(AVSValue args, void* user_data, IScriptEnvi
 
 	// thresh > 0.0 is percent thresh, < 0.0 is pixel width,height thresh, 0.0 is any in range pixel at all.
 	if(thresh_w > 0.0) {
-		thresh_w=min(thresh_w,100.0);			// silent error
+		thresh_w=std::min(thresh_w,100.0);			// silent error
 		thresh_w /= 100.0;						// range 0.0 -> 1.0 for RT_YInRange()
 		// At least baffle minus a little bit (Note these are back-to-front, eg thresh_w is for top/bot edges]
 		// th has to be GREATER THAN, hence the 'minus a little bit'.
 		thresh_w = thresh_w * ww - (1.0/ww);
 	} else if (thresh_w < 0.0) {
-		thresh_w = min(-thresh_w,ww);			// negate, limit max width, silent err
+		thresh_w = std::min<int>(-thresh_w,ww);			// negate, limit max width, silent err
 		thresh_w -= (1.0/ww);
 	}
 
 	if(thresh_h > 0.0) {
-		thresh_h=min(thresh_h,100.0);			// silent error
+		thresh_h=std::min(thresh_h,100.0);			// silent error
 		thresh_h /= 100.0;						// range 0.0 -> 1.0 for RT_YInRange()
 		thresh_h = thresh_h * hh - (1.0/hh);
 	} else if (thresh_h < 0.0) {
-		thresh_h = min(-thresh_h,hh);			// negate, limit max height, silent err
+		thresh_h = std::min<int>(-thresh_h,hh);			// negate, limit max height, silent err
 		thresh_h -= (1.0/hh);
 	}
 

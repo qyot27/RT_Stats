@@ -467,7 +467,7 @@ int __cdecl RT_MYstats_Lo(int flgs,const AVSValue &std,const AVSValue &xtra,MYLO
 		if(flgs & (RTAVE_F | RTSTDEV_F)) {
 			if((flgs & RTAVE_F) || (Pixels>1)) {
 				int i;
-				__int64 acc		 = 0;
+				int64_t acc		 = 0;
 				for(acc=0,i=256;--i>=0;) {
 					acc += cnt[i] * i;
 				}

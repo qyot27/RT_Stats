@@ -15,7 +15,7 @@
 */
 
 #include "RT_Stats.h"
-
+#include <algorithm>
 
 AVSValue __cdecl RT_QueryBorderCrop(AVSValue args, void* user_data, IScriptEnvironment* env) {
 	char *myName="RT_QueryBorderCrop: ";
@@ -52,7 +52,7 @@ AVSValue __cdecl RT_QueryBorderCrop(AVSValue args, void* user_data, IScriptEnvir
 
 	const int xmod		=	args[4].AsInt(xSubS);
 	const int ymod		=	args[5].AsInt((laced)?ySubS*2:ySubS);
-	const int wmod		=	args[6].AsInt(max(xmod,4));
+	const int wmod		=	args[6].AsInt(std::max(xmod,4));
 	const int hmod		=	args[7].AsInt(ymod);
 	const bool relative	=	args[8].AsBool(false);
 	const char *prefix	=	args[9].AsString("QBCrop");
@@ -485,12 +485,12 @@ AVSValue __cdecl RT_QueryBorderCrop(AVSValue args, void* user_data, IScriptEnvir
 
 	// CropLess
 	int wrem1 = (cw0 % wmod == 0) ? 0 : wmod - (cw0 % wmod);
-	int cx1 = max(int(cx0 - 0.5*wrem1),0) / xmod * xmod;
+	int cx1 = std::max(int(cx0 - 0.5*wrem1),0) / xmod * xmod;
 	int cw1 = (cw0 + (cx0-cx1) + wmod-1) / wmod * wmod;
     while(cx1+cw1>vi.width) {cw1 -= wmod;}								// Too wide, reduce mod WMOD
 	//
 	int hrem1 = (ch0 % hmod == 0) ? 0 : hmod - (ch0 % hmod);
-	int cy1 = max(int(cy0 - 0.5*hrem1),0) / ymod * ymod;
+	int cy1 = std::max(int(cy0 - 0.5*hrem1),0) / ymod * ymod;
 	int ch1 = (ch0 + (cy0-cy1) + hmod-1) / hmod * hmod;
     while(cy1+ch1>vi.height) {ch1 -= hmod;}								// Too wide, reduce mod WMOD
 	// CropMore

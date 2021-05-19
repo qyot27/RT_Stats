@@ -15,6 +15,7 @@
 */
 
 #include "RT_Stats.h"
+#include <iostream>
 
 AVSValue __cdecl GetVar(IScriptEnvironment* env, const char* name) {
     try {return env->GetVar(name);} catch (IScriptEnvironment::NotFound) {} return AVSValue();}
@@ -32,7 +33,7 @@ char printString[2048]="";
 		p[0]='\n';							// append n/l if not there already
 		p[1]='\0';
 	}
-	OutputDebugString(printString);
+	std::cerr << printString;
 	return int(p-printString);						// strlen printString
 }
 
@@ -65,10 +66,11 @@ void __cdecl SplitFn(const char *fn,char*path,char *name,char *ext) {
 
 
 
-char * __cdecl GetErrorString(DWORD dwLastError) {
+char * __cdecl GetErrorString(unsigned int dwLastError) {
 // The arg is optional, from Prototype: extern char * GetErrorString(DWORD dwLastError=GetLastError());
 // Ownership of returned string is passed to client and must be deleted by them.
-    DWORD dwFormatFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM ;
+    /*
+	DWORD dwFormatFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM ;
 
     HMODULE hModule		= NULL; // default to system source
     LPSTR MessageBuffer;
@@ -106,6 +108,8 @@ char * __cdecl GetErrorString(DWORD dwLastError) {
 			sprintf(str,"Unknown Error (0x%08X)",dwLastError);
 		}
 	}
+	*/
+	char * str = NULL;
 	return str;
 }
 

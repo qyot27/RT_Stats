@@ -53,7 +53,7 @@ AVSValue __cdecl RT_NumberString(AVSValue args, void* user_data, IScriptEnvironm
 		const char *s="00000000000000000000000000000000";
 		while(*d++=*s++);
 		--d;
-		_ltoa(n,d,base);
+		sprintf(d,"%d",n);
 		Ucase(d);
 		while(*d)++d;
 		int sz=int(d-&buf[32]);

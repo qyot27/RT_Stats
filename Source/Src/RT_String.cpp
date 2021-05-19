@@ -15,6 +15,7 @@
 */
 
 #include "RT_Stats.h"
+#include <algorithm>
 
 // REMark: env->SaveString(s,sz)
 // env->SaveString(s)		// s must be null term string, auto sets size.
@@ -248,7 +249,7 @@ char * StrReplaceDeep_Lo(const char*string,const char*find,const char*replace,co
 	} else {
 		const int i=int(found-string);
 		const int rn=int(strlen(replace));
-		const int k = rn - min(rn,fn-1);
+		const int k = rn - std::min(rn,fn-1);
 
 		pbf = new char[(rn-k) + (sn - (i + fn)) + 1];
 		if(pbf!=NULL) {

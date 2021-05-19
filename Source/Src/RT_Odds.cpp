@@ -16,7 +16,7 @@
 
 
 #include "RT_Stats.h"
-
+#include <string>
 
 AVSValue __cdecl RT_Undefined(AVSValue args, void* user_data, IScriptEnvironment* env) {
 	AVSValue Und;
@@ -130,10 +130,30 @@ AVSValue __cdecl RT_Timer(AVSValue args, void* user_data, IScriptEnvironment* en
 
 
 double __cdecl RT_TimerHP_Lo(void) {
+	/*
+	typedef uint8_t BYTE;
+	typedef uint32_t DWORD;
+	typedef int32_t LONG;
+	typedef int64_t LONGLONG;
+
+	typedef union _LARGE_INTEGER {
+		struct {
+	DWORD LowPart;
+	LONG  HighPart;
+	};
+	struct {
+	DWORD LowPart;
+		LONG  HighPart;
+	} u;
+	LONGLONG QuadPart;
+	} LARGE_INTEGER, *PLARGE_INTEGER;
+
     LARGE_INTEGER liPerfCounter = {0,0};
     LARGE_INTEGER liPerfFreq    = {0,0};
     bool bStat              = true;
-    DWORD_PTR dwpOldMask    = SetThreadAffinityMask(GetCurrentThread(), 0x01);
+
+	uintptr_t dwpOldMask    = SetThreadAffinityMask(GetCurrentThread(), 0x01);
+
     Sleep(0);
     if ((QueryPerformanceFrequency(&liPerfFreq) == 0) || (QueryPerformanceCounter(&liPerfCounter) == 0))
         bStat = false;
@@ -146,10 +166,7 @@ double __cdecl RT_TimerHP_Lo(void) {
             first_time32 = t;
             done32=true;
         }
-        tim = double(t-first_time32) / double(CLOCKS_PER_SEC);          // Fallback, low rez timer
-    } else { // High precision IS available.
-        static __int64 first_time64=0;
-        static bool done64 = false;
+        tim = double(t-first_time32) / double(CLOCKS_PER_SEC);     SetThreadAffinityMask
         if(!done64) {
             first_time64 = liPerfCounter.QuadPart;
             done64=true;
@@ -158,7 +175,9 @@ double __cdecl RT_TimerHP_Lo(void) {
     }
     SetThreadAffinityMask(GetCurrentThread(), dwpOldMask);
     Sleep(0);
-    return tim;                                                 // return double for C client
+    */
+	double tim;
+	return tim;                                                 // return double for C client
 }
 
 
@@ -399,12 +418,14 @@ DWORD GetTickCount(VOID)
 */
 
 AVSValue __cdecl RT_GetFileTime(AVSValue args, void* user_data, IScriptEnvironment* env) {
+	/*
 	char * myName="RT_GetFileTime: ";
 	const char *fn=args[0].AsString();
 	const int item = args[1].AsInt();
 	if(item <0 || item > 2) {
         env->ThrowError("%sError invalid time item int %d(0 -> 2)",myName,item);
 	}
+
 	SetLastError(ERROR_SUCCESS);
 
     HANDLE hFile = CreateFile(
@@ -438,25 +459,50 @@ AVSValue __cdecl RT_GetFileTime(AVSValue args, void* user_data, IScriptEnvironme
     if(ret==0)
 		env->ThrowError("%sError Cannot convert to SystemTime (%s : %s) ",myName,fn,GetErrorString());
 
+	*/
 	char bf[64];
-	sprintf(bf,"%4d-%02d-%02d %02d:%02d:%02d.%03d",st.wYear,st.wMonth,st.wDay,st.wHour,st.wMinute,st.wSecond,st.wMilliseconds);
+	// sprintf(bf,"%4d-%02d-%02d %02d:%02d:%02d.%03d",st.wYear,st.wMonth,st.wDay,st.wHour,st.wMinute,st.wSecond,st.wMilliseconds);
+
 	return env->SaveString(bf);
 }
 
 AVSValue __cdecl RT_LocalTimeString(AVSValue args, void* user_data, IScriptEnvironment* env) {
 	const bool file = args[0].AsBool(true);
-    SYSTEMTIME	st = { 0 };
+
+    //     SYSTEMTIME  st = { 0 };
+
+	struct timespec now;
+    struct tm tm;
+
+	/*
 	if(file) {
-		DWORD tick=GetTickCount();
-		while(GetTickCount()==tick)	// Wait until system clock goes TICK (prevent two separate calls returning same time)
-		    Sleep(0);
+		unsigned int tick = clock_gettime(CLOCK_MONOTONIC,&now); // GetTickCount();
+		while(clock_gettime(CLOCK_MONOTONIC,&now)==tick)	// Wait until system clock goes TICK (prevent two separate calls returning same time)
+		    sleep(0);
 	}
-	GetLocalTime(&st);
+	*/
+
 	char bf[64];
+    const int bufsize = 31;
+
+    int retval = clock_gettime(CLOCK_REALTIME, &now);
+	gmtime_r(&now.tv_sec, &tm);
+
 	if(file) {
-		sprintf(bf,"%4d%02d%02d_%02d%02d%02d_%03d",st.wYear,st.wMonth,st.wDay,st.wHour,st.wMinute,st.wSecond,st.wMilliseconds);
+		strftime(bf, bufsize, "%Y-%m-%dT%H:%M:%S.", &tm);
+	sprintf(bf, "%s%09luZ", bf, now.tv_nsec);
 	} else {
-		sprintf(bf,"%4d-%02d-%02d %02d:%02d:%02d.%03d",st.wYear,st.wMonth,st.wDay,st.wHour,st.wMinute,st.wSecond,st.wMilliseconds);
-	}
+		strftime(bf, bufsize, "%Y-%m-%dT%H:%M:%S.", &tm);
+	sprintf(bf, "%s%09luZ", bf, now.tv_nsec);
+    }
+
+	/*
+	if(file) {
+        sprintf(bf,"%4d%02d%02d_%02d%02d%02d_%03d",st.wYear,st.wMonth,st.wDay,st.wHour,st.wMinute,st.wSecond,st.wMilliseconds);
+    } else {
+        sprintf(bf,"%4d-%02d-%02d %02d:%02d:%02d.%03d",st.wYear,st.wMonth,st.wDay,st.wHour,st.wMinute,st.wSecond,st.wMilliseconds);
+    }
+	*/
+
 	return env->SaveString(bf);
 }

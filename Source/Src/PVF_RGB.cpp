@@ -28,7 +28,7 @@ double __cdecl PVF_AverageLuma_RGB(const PVideoFrame &src,const int xx,const int
     const int height   = src->GetHeight();
 	const int ystride  = pitch*ystep;
 	const BYTE  *srcp  = src->GetReadPtr() + ((height-1 - yy) * pitch) + (xx * xstep);
-	__int64 acc		 = 0;
+	int64_t acc		 = 0;
     unsigned int sum = 0;
 	const int yhit = (altscan) ? (hh +1)>>1 : hh;
     const unsigned int Pixels = (ww * yhit);
