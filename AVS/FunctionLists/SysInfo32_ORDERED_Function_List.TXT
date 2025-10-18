@@ -1,0 +1,82 @@
+
+        SysInfo32_ORDERED_Function_List
+
+
+There follows a list of all function names together with CPP style argument specifiers that inform
+Avisynth the argument types and optional names. Optional arguments have square brackets surrounding
+their name as in [name] and are followed by a type specifier character that gives the type.
+Unnamed arguments are not optional. eg "cc[arg1]b[arg2]i" would be two compulsory unnamed clip args,
+followed by optional 'arg1' of type bool and optional 'arg2' of type int.
+
+# Argument type specifier strings.
+ c - Video Clip
+ i - Integer number
+ f - Float number
+ s - String
+ b - boolean
+ . - Any type (dot)
+# Array Specifiers
+ i* - Integer Array, zero or more
+ i+ - Integer Array, one or more
+ .* - Any type Array, zero or more
+ .+ - Any type Array, one or more
+#    Etc
+###################################
+
+
+AI_AutoLoadPath           "s"
+AI_AvsDLLPath             ""
+AI_AvsDLLTimeStamp        ""
+AI_AvsFileVersion         ""
+AI_AvsPlusBuildNumber     ""
+AI_AvsProductVersion      ""
+AI_ExternalFunctionExists "s"
+AI_FunctionExists         "s"
+AI_InternalFunctionExists "s"
+AI_IsAvs26                ""
+AI_IsAvsPlus              ""
+SI_AvailableSystemMemory  ""
+SI_CPUExtensions          ""
+SI_CPUName                ""
+SI_GetEnvVar              "s"
+SI_HasAVX                 ""
+SI_HasAVX2                ""
+SI_HasAVX512              ""
+SI_HasFMA3                ""
+SI_HasFMA4                ""
+SI_HasMMX                 ""
+SI_HasSSE                 ""
+SI_HasSSE2                ""
+SI_HasSSE3                ""
+SI_HasSSE41               ""
+SI_HasSSE42               ""
+SI_HasSSSE3               ""
+SI_IsOS64Bit              ""
+SI_IsWin10                ""
+SI_IsWin7                 ""
+SI_IsWin8                 ""
+SI_IsWin81                ""
+SI_IsWinServer2003        ""
+SI_IsWinServer2008        ""
+SI_IsWinServer2008R2      ""
+SI_IsWinServer2012        ""
+SI_IsWinServer2012R2      ""
+SI_IsWinVista             ""
+SI_IsWinXP                ""
+SI_LogicalCores           ""
+SI_ModulePath             ""
+SI_NumberOfCPUs           ""
+SI_OSBuildNumber          ""
+SI_OSServicePack          ""
+SI_OSVersionNumber        ""
+SI_OSVersionString        ""
+SI_PhysicalCores          ""
+SI_ProcessBitness         ""
+SI_ProcessName            ""
+SI_ScreenBitsPerPixel     ""
+SI_ScreenResX             ""
+SI_ScreenResY             ""
+SI_ScreenVRefresh         ""
+SI_TotalSystemMemory      ""
+SI_UserName               ""
+SysInfoVersion            ""

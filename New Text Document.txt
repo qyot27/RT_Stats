@@ -1,0 +1,84 @@
+
+    FrmNo = current_frame # Frame Number Or DB Record number [same]
+    Valid = RT_DBaseGetField(DB,FrmNo,FLD_VALID)    # Record already valid ? [ie visited already]
+    if(!Valid) {
+        FC = FrameCount
+        Comb = IsCombedTIVTC(cthresh=THRESH,mi=MI,chroma=CHROMA,blockx=BLOCKX,blocky=BLOCKY,metric=METRIC)
+        PDif = (FrmNo==0) ? 255.0 : RT_FrameDifference(Last,Last,n=FrmNo,n2=FrmNo-1,ChromaWeight=1.0/3)         # Frame 0 special case, assign PDf=255.0
+        # We first find duplicates range
+        # If dupe, we need to find prior Unique
+        StartU = 0
+        if(PDif == 0.0) { # Dupe, Find prior Unique
+            # MUST scan backwards to find frame that is Unique to its predecessor [ie first of which dupes are a copy]
+            # 1st valid record prior to dupe can be a dupe [dupe range was previously written there] or Unique [single Unique record was written].
+            for(i=FrmNo-1,0,-1) {                                       # Exit with i==-1
+                if(!RT_DBaseGetField(DB,i,FLD_VALID)) {                 # Unknown/Invalid
+                    if(RT_FrameDifference(Last,Last,n=i,n2=i-1,ChromaWeight=1.0/3) > 0.0) {
+                        StartU=i
+                        i = -1                                          # Break, Exit with i=-2
+                    }
+                } Else {
+                    StartU = (RT_DBaseGetField(DB,i,FLD_PDIF) == 0.0) ? i + 1 : i # Start unique frame [of which dupes are a copy].
+                    i = -2                                              # Break, Exit with i=-3 :
+                }
+            }
+        }
+        # Dupe Or Unique we need to find if Next are dupes.
+        # Scan forwards to find next Unique frame [non dupe]
+        EndU = FC
+        for(i=n+1,FC-1) {                                           # Exit with i=FC
+            if(!RT_DBaseGetField(DB,i,FLD_VALID)) {                 # Unknown/Invalid
+                if(RT_FrameDifference(Last,Last,n=i,n2=i-1,ChromaWeight=1.0/3) > 0.0)
+                    EndU=i
+                    i = FC                                          # Break, Exit with i=FC=+1
+                }
+            } Else {
+                EndU=i    # End Unique frame [following any dupes, we dont write anything for that record, it could be first on next dupe run]
+                i = FC+1  # Break, Exit with i=FC+2
+            }
+        }
+        # We Set values StartU to EndU-1. We cant set EndU, Although Unique, it could be start of new dupe run.
+        Count = EndU - StartU
+        Deint = Count > COMBCNT
+        for(i=StartU,EndU-1) {
+            RT_DBaseSetField(DB,i,FLD_PDIF,RT_FrameDifference(Last,Last,n=i,n2=i-1,ChromaWeight=1.0/3))
+            RT_DBaseSetField(DB,i,FLD_COMB,Comb)
+            RT_DBaseSetField(DB,i,FLD_DEINT,Deint)
+            RT_DBaseSetField(DB,i,FLD_START,StartU)
+            RT_DBaseSetField(DB,i,FLD_END,EndU-1)
+            RT_DBaseSetField(DB,i,FLD_COUNT,EndU-StartU)
+        }
+        RT_DBaseSetField(DB,FrmNo,FLD_VALID,True)             # Flag Fields Valid
+    } else { # Comb status is valid
+        Comb  = RT_DBaseGetField(DB,FrmNo,FLD_COMB)
+    }
+    if(Comb || SHOW) {
+        Deint = RT_DBaseGetField(DB,FrmNo,FLD_DEINT)
+        if(Deint) {              # Deinterlacing
+            DClip                # Use deinterlaced clip for this frame
+            (SHOW)
+                \ ? RT_Subtitle("%d] Df=%f : Comb=%s : S=%d : E=%d : N=%d [DEINT]",
+                \     FrmNo,
+                \     RT_DBaseGetField(DB,FrmNo,FLD_PDIF),
+                \     RT_DBaseGetField(DB,FrmNo,FLD_COMB),
+                \     RT_DBaseGetField(DB,FrmNo,FLD_START),
+                \     RT_DBaseGetField(DB,FrmNo,FLD_END),
+                \     RT_DBaseGetField(DB,FrmNo,FLD_COUNT)
+                \   )
+                \ : NOP
+        } Else if (Comb) {
+            (SHOW)
+                \ ? RT_Subtitle("%d] Df=%f : Comb=%s : S=%d : E=%d : N=%d",
+                \     FrmNo,
+                \     RT_DBaseGetField(DB,FrmNo,FLD_PDIF),
+                \     RT_DBaseGetField(DB,FrmNo,FLD_COMB),
+                \     RT_DBaseGetField(DB,FrmNo,FLD_START),
+                \     RT_DBaseGetField(DB,FrmNo,FLD_END),
+                \     RT_DBaseGetField(DB,FrmNo,FLD_COUNT)
+                \   )
+                \ : NOP
+        } Else { # Here due to SHOW, and Not Combed at all.
+            RT_Subtitle("%d] Df=%f : Comb=%s",FrmNo,RT_DBaseGetField(DB,FrmNo,FLD_PDIF),RT_DBaseGetField(DB,FrmNo,FLD_COMB))
+        }
+    }
+    Return Last

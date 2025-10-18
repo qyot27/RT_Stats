@@ -1,0 +1,67 @@
+
+        Grunt_ORDERED_Function_List
+
+
+There follows a list of all function names together with CPP style argument specifiers that inform
+Avisynth the argument types and optional names. Optional arguments have square brackets surrounding
+their name as in [name] and are followed by a type specifier character that gives the type.
+Unnamed arguments are not optional. eg "cc[arg1]b[arg2]i" would be two compulsory unnamed clip args,
+followed by optional 'arg1' of type bool and optional 'arg2' of type int.
+
+# Argument type specifier strings.
+ c - Video Clip
+ i - Integer number
+ f - Float number
+ s - String
+ b - boolean
+ . - Any type (dot)
+# Array Specifiers
+ i* - Integer Array, zero or more
+ i+ - Integer Array, one or more
+ .* - Any type Array, zero or more
+ .+ - Any type Array, one or more
+#    Etc
+###################################
+
+
+AverageChromaU            "ci"
+AverageChromaV            "ci"
+AverageLuma               "ci"
+BindStr                   "s"
+ChromaUDifference         "cci"
+ChromaVDifference         "cci"
+ConditionalFilter         "cccs[showx]b[args]s[local]b"
+ConditionalFilter         "cccs[showx]b[args]s[local]b"
+FrameEvaluate             "cs[showx]b[after_frame]b[args]s[local]b"
+GConditionalFilter        "cccs[show]b[args]s[local]b"
+GConditionalFilter        "cccs[show]b[args]s[local]b"
+GFrameEvaluate            "cs[show]b[after_frame]b[args]s[local]b"
+GRTConfig                 "[local]b"
+GScriptClip               "cs[show]b[after_frame]b[args]s[local]b"
+GWriteFile                "c[filename]ss+[append]b[flush]b[args]s[local]b"
+GWriteFileIf              "c[filename]ss+[append]b[flush]b[args]s[local]b"
+LumaDifference            "cci"
+RGBDifference             "cci"
+RGBDifferenceFromPrevious "ci"
+RGBDifferenceToNext       "ci"
+ScriptClip                "cs[showx]b[after_frame]b[args]s[local]b"
+UDifferenceFromPrevious   "ci"
+UDifferenceToNext         "ci"
+UPlaneMax                 "c[threshold]fi"
+UPlaneMedian              "ci"
+UPlaneMin                 "c[threshold]fi"
+UPlaneMinMaxDifference    "c[threshold]fi"
+VDifferenceFromPrevious   "ci"
+VDifferenceToNext         "ci"
+VPlaneMax                 "c[threshold]fi"
+VPlaneMedian              "ci"
+VPlaneMin                 "c[threshold]fi"
+VPlaneMinMaxDifference    "c[threshold]fi"
+WriteFile                 "c[filenamex]ss+[append]b[flush]b[args]s[local]b"
+WriteFileIf               "c[filenamex]ss+[append]b[flush]b[args]s[local]b"
+YDifferenceFromPrevious   "ci"
+YDifferenceToNext         "ci"
+YPlaneMax                 "c[threshold]fi"
+YPlaneMedian              "ci"
+YPlaneMin                 "c[threshold]fi"
+YPlaneMinMaxDifference    "c[threshold]fi"
