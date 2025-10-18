@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.31..4.2)
 set(PluginName "RT_Stats")
 
 if (NOT WIN32)
@@ -12,10 +13,17 @@ add_library(${PluginName} SHARED ${RTStatsSources})
 
 aux_source_directory(. SRC_LIST)
 
+if(WIN32)
 set(wxWidgets_CONFIGURATION mswu)
+else()
+set(wxWidgets_CONFIG_OPTIONS --libs)
+endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DINTEL_INTRINSICS -msse4.1")
 
-find_package(wxWidgets COMPONENTS core base REQUIRED)
+find_package(wxWidgets COMPONENTS base core)
+if(wxWidgets_FOUND)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_WXWIDGETS")
+endif()
 
 set(CMAKE_BUILD_TYPE Debug)
 

@@ -14,6 +14,7 @@
 
 */
 
+#ifdef HAVE_WXWIDGETS
 #include "RT_Stats.h"
 #include <limits.h>
 #include <wx/wx.h>
@@ -400,3 +401,4 @@ AVSValue __cdecl  RT_FSelFolder(AVSValue args, void* user_data, IScriptEnvironme
 
 	return env->SaveString(szFold);
 }
+#endif // HAVE_WXWIDGETS

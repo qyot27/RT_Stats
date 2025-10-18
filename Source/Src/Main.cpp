@@ -209,9 +209,11 @@
  env->AddFunction("RT_FileFindStr",				"ss[sig]b[pos]i[start]i[lines]i",RT_FileFindStr, 0);
  env->AddFunction("RT_WriteFile",				"ss.*[Append]b",RT_WriteFile, 0);
  env->AddFunction("RT_FileRename",				"ss",RT_FileRename, 0);
+#ifdef HAVE_WXWIDGETS
  env->AddFunction("RT_FSelOpen"  ,				"[title]s[dir]s[filt]s[fn]s[multi]b[debug]b",RT_FSelOpen,0);
  env->AddFunction("RT_FSelSaveAs",				"[title]s[dir]s[filt]s[fn]s[debug]b",RT_FSelSaveAs,0);
  env->AddFunction("RT_FSelFolder",				"[title]s[dir]s[debug]b",RT_FSelFolder,0);
+#endif
  env->AddFunction("RT_YDifference",				"c[n]i[delta]i[x]i[y]i[w]i[h]i[x2]i[y2]i[Interlaced]b[matrix]i",RT_YDifference, 0);
  env->AddFunction("RT_LumaDifference",			"cc[n]i[delta]i[x]i[y]i[w]i[h]i[n2]i[delta2]i[x2]i[y2]i[Interlaced]b[matrix]i",RT_LumaDifference, 0);
  env->AddFunction("RT_LumaCorrelation",			"cc[n]i[delta]i[x]i[y]i[w]i[h]i[n2]i[delta2]i[x2]i[y2]i[Interlaced]b[matrix]i",RT_LumaCorrelation, 0);
